@@ -330,9 +330,14 @@ async function recarregarParaFormulario(dados, docId) {
 
     const selectMarca = document.getElementById('marca');
 
-    // 2. Seleciona a Marca
+    // Garante que as marcas da FIPE foram totalmente carregadas antes de prosseguir
+    if (selectMarca.options.length <= 1) {
+        await carregarMarcas();
+    }
+
+    // 2. Seleciona a Marca pelo código salvo ou pelo texto
     if (dados.codigoMarca) {
-        selectMarca.value = dados.codigoMarca;
+        selectMarca.value = String(dados.codigoMarca);
     } else {
         const partes = dados.veiculo.split(" - ");
         const nomeMarca = partes[0].trim().toLowerCase();
@@ -344,14 +349,14 @@ async function recarregarParaFormulario(dados, docId) {
         }
     }
 
-    // 3. Força o carregamento dos modelos na FIPE e aguarda a promessa ser resolvida
+    // 3. Força o carregamento dos modelos da marca selecionada e aguarda a API responder
     await carregarModelos();
 
     const selectModelo = document.getElementById('modelo');
 
-    // 4. Seleciona o Modelo (Pelo código exato da FIPE ou por aproximação do nome)
+    // 4. Seleciona o Modelo pelo código exato da FIPE ou por aproximação do nome
     if (dados.codigoModelo) {
-        selectModelo.value = dados.codigoModelo;
+        selectModelo.value = String(dados.codigoModelo);
     } else {
         const partes = dados.veiculo.split(" - ");
         const nomeModelo = partes.slice(1).join(" - ").trim().toLowerCase();
@@ -364,7 +369,7 @@ async function recarregarParaFormulario(dados, docId) {
         }
     }
 
-    // 5. Gera o checklist
+    // 5. Gera o checklist com as tarefas
     gerarChecklist();
 
     // 6. Marca os checkboxes dos itens já concluídos
@@ -382,7 +387,6 @@ async function recarregarParaFormulario(dados, docId) {
     // Rola até o topo da página suavemente
     window.scrollTo({ top: 0, behavior: 'smooth' });
 }
-
 async function excluirHistoricoDoBanco(docId) {
     if (!confirm("Tem certeza que deseja excluir esta revisão do seu histórico?")) return;
 
