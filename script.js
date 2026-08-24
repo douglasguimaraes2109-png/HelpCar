@@ -300,31 +300,49 @@ async function recarregarParaFormulario(dados, docId) {
     // 1. Preenche a Quilometragem
     document.getElementById('km').value = dados.odometro;
 
-    // 2. Extrai a Marca e o Modelo da string do veículo (ex: "VW - VolksWagen - GOL")
+    // 2. Separa Marca e Modelo da string (Ex: "VW - VolksWagen - GOL 1.0")
     const partesVeiculo = dados.veiculo.split(" - ");
-    const nomeMarca = partesVeiculo[0];
-    const nomeModelo = partesVeiculo.slice(1).join(" - ");
+    const nomeMarca = partesVeiculo[0].trim();
+    // O modelo pode conter hífens no nome, então juntamos o restante das partes
+    const nomeModelo = partesVeiculo.slice(1).join(" - ").trim();
 
     const selectMarca = document.getElementById('marca');
 
-    // 3. Procura a marca no <select> pelo nome e seleciona
+    // 3. Procura e seleciona a Marca no <select>
     let marcaEncontrada = false;
     for (let i = 0; i < selectMarca.options.length; i++) {
-        if (selectMarca.options[i].text.toLowerCase().includes(nomeMarca.toLowerCase())) {
+        const textoOpcao = selectMarca.options[i].text.toLowerCase();
+        if (textoOpcao.includes(nomeMarca.toLowerCase())) {
             selectMarca.selectedIndex = i;
             marcaEncontrada = true;
             break;
         }
     }
 
-    // 4. Carrega os modelos da marca selecionada e seleciona o modelo correto
+    // 4. Se a marca foi encontrada, força o carregamento dos modelos na API FIPE
     if (marcaEncontrada) {
+        // Aguarda a requisição da API FIPE trazer todos os modelos
         await carregarModelos();
+
         const selectModelo = document.getElementById('modelo');
+
+        // Procura o modelo exato na lista retornada
+        let modeloEncontrado = false;
         for (let i = 0; i < selectModelo.options.length; i++) {
-            if (selectModelo.options[i].value === nomeModelo) {
+            if (selectModelo.options[i].value.toLowerCase() === nomeModelo.toLowerCase()) {
                 selectModelo.selectedIndex = i;
+                modeloEncontrado = true;
                 break;
+            }
+        }
+
+        // Se não achou por correspondência exata, tenta encontrar por aproximação
+        if (!modeloEncontrado) {
+            for (let i = 0; i < selectModelo.options.length; i++) {
+                if (selectModelo.options[i].text.toLowerCase().includes(nomeModelo.toLowerCase())) {
+                    selectModelo.selectedIndex = i;
+                    break;
+                }
             }
         }
     }
@@ -332,7 +350,7 @@ async function recarregarParaFormulario(dados, docId) {
     // 5. Gera o checklist
     gerarChecklist();
 
-    // 6. Marca os checkboxes dos itens que já tinham sido salvos como concluídos
+    // 6. Marca os checkboxes dos itens salvos anteriormente
     if (dados.itensConcluidos && dados.itensConcluidos.length > 0) {
         const checkboxes = document.querySelectorAll('#listaManutencao input[type="checkbox"]');
         checkboxes.forEach(cb => {
@@ -344,10 +362,9 @@ async function recarregarParaFormulario(dados, docId) {
         });
     }
 
-    // Rola a página suavemente de volta para o topo (para o formulário)
+    // Rola a página suavemente para o topo
     window.scrollTo({ top: 0, behavior: 'smooth' });
 }
-
 // Função para excluir um registro antigo do banco
 async function excluirHistoricoDoBanco(docId) {
     if (!confirm("Tem certeza que deseja excluir esta revisão do seu histórico?")) return;
