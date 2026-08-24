@@ -3,47 +3,66 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Gerenciador de Manutenção Automotiva</title>
+    <title>HelpCar - Checklist de Manutenção</title>
     <link rel="stylesheet" href="style.css">
-    <!-- Biblioteca para geração do PDF -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 </head>
 <body>
+    <div class="container" id="conteudoParaPdf">
+        
+        <!-- Barra de Autenticação -->
+        <div id="authHeader" class="no-print">
+            <span id="userInfo">Você está usando como visitante</span>
+            <button id="btnAuth" type="button">Entrar / Cadastrar</button>
+        </div>
 
-<div class="container" id="conteudoParaPdf">
-    <h2>Checklist de Manutenção</h2>
-    <div class="subtitle">Selecione o veículo pela API da FIPE e confira as revisões</div>
+        <h2>Checklist de Manutenção</h2>
+        <p class="subtitle no-print">Selecione o veículo pela API da FIPE e confira as revisões</p>
 
-    <div class="form-group no-print">
-        <label for="marca">1. Selecione a Marca</label>
-        <select id="marca">
-            <option value="">Carregando marcas...</option>
-        </select>
-    </div>
-
-    <div class="form-group no-print">
-        <label for="modelo">2. Selecione o Modelo</label>
-        <select id="modelo" disabled>
-            <option value="">Selecione uma marca primeiro</option>
-        </select>
-    </div>
-
-    <div class="form-group no-print">
-        <label for="km">3. Quilometragem Atual (km)</label>
-        <input type="number" id="km" placeholder="Ex: 80000" value="80000">
-    </div>
-
-    <button id="btnBuscar" class="no-print">Buscar Manutenções Necessárias</button>
-
-    <div class="checklist-section">
-        <div class="section-title" id="tituloResultado">Itens para Checagem</div>
         <div id="infoVeiculoPdf" class="info-pdf-only"></div>
-        <div id="listaManutencao"></div>
+
+        <div class="form-group no-print">
+            <label for="marca">Marca:</label>
+            <select id="marca">
+                <option value="">Carregando marcas...</option>
+            </select>
+        </div>
+
+        <div class="form-group no-print">
+            <label for="modelo">Modelo:</label>
+            <select id="modelo" disabled>
+                <option value="">Selecione uma marca primeiro</option>
+            </select>
+        </div>
+
+        <div class="form-group no-print">
+            <label for="km">Quilometragem Atual (Odômetro):</label>
+            <input type="number" id="km" placeholder="Ex: 77800">
+        </div>
+
+        <button id="btnBuscar" class="no-print">Gerar Checklist</button>
+
+        <div class="checklist-section">
+            <div id="listaManutencao"></div>
+        </div>
+
+        <button id="btnSalvarHistorico" class="btn-pdf no-print" style="display: none; background-color: #3b82f6 !important;">💾 Salvar no Histórico</button>
+        <button id="btnExportarPdf" class="btn-pdf no-print" style="display: none;">📄 Baixar Relatório em PDF</button>
+
+        <!-- SEÇÃO DO HISTÓRICO SALVO -->
+        <div id="secaoHistorico" class="no-print" style="margin-top: 30px; border-top: 1px solid var(--border); padding-top: 20px; display: none;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+                <h3 style="margin: 0; color: var(--accent); font-size: 1.1em;">📜 Meu Histórico de Manutenções</h3>
+                <button id="btnCarregarHistorico" style="width: auto; padding: 6px 12px; margin: 0; background: #334155;">Atualizar</button>
+            </div>
+            <div id="listaHistorico"></div>
+        </div>
     </div>
 
-    <button id="btnExportarPdf" class="btn-pdf no-print" style="display: none;">📄 Baixar Relatório em PDF</button>
-</div>
+    <!-- SDKs do Firebase -->
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
 
-<script src="script.js"></script>
+    <script src="script.js"></script>
 </body>
 </html>

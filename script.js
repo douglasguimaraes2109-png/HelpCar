@@ -1,3 +1,67 @@
+// ==========================================
+// 1. CONFIGURAÇÃO DO FIREBASE
+// ==========================================
+const firebaseConfig = {
+  apiKey: "AIzaSyAr2WewAfeddazQLBpV-JId3Tmq9Tx8s_M",
+  authDomain: "helpcardb.firebaseapp.com",
+  projectId: "helpcardb",
+  storageBucket: "helpcardb.firebasestorage.app",
+  messagingSenderId: "865693923703",
+  appId: "1:865693923703:web:7f41059397c44ff85e4972",
+  measurementId: "G-J33QTYLZN6"
+};
+
+firebase.initializeApp(firebaseConfig);
+const auth = firebase.auth();
+const db = firebase.firestore();
+
+let usuarioLogado = null;
+
+// ==========================================
+// 2. CONTROLE DE AUTENTICAÇÃO
+// ==========================================
+auth.onAuthStateChanged(user => {
+    const userInfo = document.getElementById('userInfo');
+    const btnAuth = document.getElementById('btnAuth');
+    const secaoHistorico = document.getElementById('secaoHistorico');
+
+    if (user) {
+        usuarioLogado = user;
+        userInfo.innerHTML = `👤 <strong>${user.email}</strong>`;
+        btnAuth.textContent = "Sair";
+        btnAuth.onclick = () => auth.signOut();
+        secaoHistorico.style.display = 'block';
+        carregarHistoricoDoBanco();
+    } else {
+        usuarioLogado = null;
+        userInfo.innerHTML = "Modo Visitante";
+        btnAuth.textContent = "Entrar / Cadastrar";
+        btnAuth.onclick = gerenciarLogin;
+        secaoHistorico.style.display = 'none';
+    }
+});
+
+function gerenciarLogin() {
+    const email = prompt("Digite seu e-mail:");
+    if (!email) return;
+
+    const senha = prompt("Digite sua senha:");
+    if (!senha) return;
+
+    auth.signInWithEmailAndPassword(email, senha)
+        .then(() => alert("Login realizado com sucesso!"))
+        .catch(error => {
+            if (error.code === 'auth/user-not-found' || confirm("Conta não encontrada. Deseja criar uma conta com esses dados?")) {
+                auth.createUserWithEmailAndPassword(email, senha)
+                    .then(() => alert("Conta criada e conectada com sucesso!"))
+                    .catch(err => alert("Erro ao criar conta: " + err.message));
+            }
+        });
+}
+
+// ==========================================
+// 3. API FIPE E CHECKLIST
+// ==========================================
 const API_FIPE_URL = "https://parallelum.com.br/fipe/api/v1/carros";
 
 const manutencaoPadrao = [
@@ -14,13 +78,11 @@ const manutencaoPadrao = [
 document.addEventListener("DOMContentLoaded", () => {
     carregarMarcas();
 
-    const selectMarca = document.getElementById('marca');
-    const btnBuscar = document.getElementById('btnBuscar');
-    const btnExportarPdf = document.getElementById('btnExportarPdf');
-
-    selectMarca.addEventListener('change', carregarModelos);
-    btnBuscar.addEventListener('click', gerarChecklist);
-    btnExportarPdf.addEventListener('click', gerarRelatorioPDF);
+    document.getElementById('marca').addEventListener('change', carregarModelos);
+    document.getElementById('btnBuscar').addEventListener('click', gerarChecklist);
+    document.getElementById('btnExportarPdf').addEventListener('click', () => window.print());
+    document.getElementById('btnSalvarHistorico').addEventListener('click', salvarHistoricoNoBanco);
+    document.getElementById('btnCarregarHistorico').addEventListener('click', carregarHistoricoDoBanco);
 });
 
 async function carregarMarcas() {
@@ -78,19 +140,15 @@ function gerarChecklist() {
     const kmAtual = parseInt(document.getElementById('km').value) || 0;
     const listaDiv = document.getElementById('listaManutencao');
     const btnPdf = document.getElementById('btnExportarPdf');
+    const btnSalvar = document.getElementById('btnSalvarHistorico');
     const infoPdf = document.getElementById('infoVeiculoPdf');
 
     listaDiv.innerHTML = "";
 
-    if (!modeloNome) {
-        listaDiv.innerHTML = `<div class="empty-msg">Por favor, selecione uma marca e um modelo.</div>`;
+    if (!modeloNome || kmAtual <= 0) {
+        listaDiv.innerHTML = `<div class="empty-msg">Selecione o veículo e digite uma quilometragem válida.</div>`;
         btnPdf.style.display = 'none';
-        return;
-    }
-
-    if (kmAtual <= 0) {
-        listaDiv.innerHTML = `<div class="empty-msg">Por favor, insira uma quilometragem válida.</div>`;
-        btnPdf.style.display = 'none';
+        btnSalvar.style.display = 'none';
         return;
     }
 
@@ -100,46 +158,205 @@ function gerarChecklist() {
         return (kmAtual % item.kmIntervalo === 0) || (kmAtual >= item.kmIntervalo);
     });
 
-    if (pendencias.length === 0) {
-        listaDiv.innerHTML = `<div class="empty-msg">Nenhuma manutenção periódica registrada para esta quilometragem.</div>`;
-        btnPdf.style.display = 'none';
-        return;
-    }
-
     pendencias.forEach((task, index) => {
+        const proximaKm = (Math.floor(kmAtual / task.kmIntervalo) + 1) * task.kmIntervalo;
+
         const itemDiv = document.createElement('div');
         itemDiv.className = 'task-item';
         itemDiv.id = `task-container-${index}`;
 
         itemDiv.innerHTML = `
-            <input type="checkbox" id="check-${index}">
+            <input type="checkbox" id="check-${index}" data-title="${task.item}">
             <div class="task-content">
                 <label for="check-${index}" class="task-title">${task.item}</label>
                 <div class="task-desc">${task.desc}</div>
-                <span class="task-tag">${task.cat} • A cada ${task.kmIntervalo.toLocaleString('pt-BR')} km</span>
+                <div style="margin-top: 6px;">
+                    <span class="task-tag">${task.cat} • A cada ${task.kmIntervalo.toLocaleString('pt-BR')} km</span>
+                    <span class="proxima-revisao-tag">📌 Próxima troca: <strong>${proximaKm.toLocaleString('pt-BR')} km</strong></span>
+                </div>
             </div>
         `;
         listaDiv.appendChild(itemDiv);
 
         const checkbox = itemDiv.querySelector(`#check-${index}`);
-        checkbox.addEventListener('change', () => toggleTask(index));
+        checkbox.addEventListener('change', () => {
+            if (checkbox.checked) {
+                itemDiv.classList.add('completed');
+            } else {
+                itemDiv.classList.remove('completed');
+            }
+        });
     });
 
     btnPdf.style.display = 'block';
+    btnSalvar.style.display = 'block';
 }
 
-function toggleTask(index) {
-    const checkbox = document.getElementById(`check-${index}`);
-    const container = document.getElementById(`task-container-${index}`);
+// ==========================================
+// 4. BANCO DE DADOS: SALVAR E BUSCAR HISTÓRICO
+// ==========================================
+async function salvarHistoricoNoBanco() {
+    if (!usuarioLogado) {
+        alert("Você precisa estar logado para salvar no histórico!");
+        gerenciarLogin();
+        return;
+    }
 
-    if (checkbox.checked) {
-        container.classList.add('completed');
-    } else {
-        container.classList.remove('completed');
+    const selectMarca = document.getElementById('marca');
+    const marcaNome = selectMarca.options[selectMarca.selectedIndex]?.text || '';
+    const modeloNome = document.getElementById('modelo').value;
+    const kmAtual = parseInt(document.getElementById('km').value) || 0;
+
+    const checkboxes = document.querySelectorAll('#listaManutencao input[type="checkbox"]:checked');
+    const itensConcluidos = Array.from(checkboxes).map(cb => cb.getAttribute('data-title'));
+
+    try {
+        await db.collection("users").doc(usuarioLogado.uid).collection("historico").add({
+            veiculo: `${marcaNome} - ${modeloNome}`,
+            odometro: kmAtual,
+            itensConcluidos: itensConcluidos,
+            dataRegistro: new Date().toLocaleDateString('pt-BR')
+        });
+
+        alert("Revisão salva no seu histórico com sucesso!");
+        carregarHistoricoDoBanco(); // Atualiza a lista na tela imediatamente
+    } catch (error) {
+        alert("Erro ao salvar histórico: " + error.message);
     }
 }
 
-// Abre a janela nativa do navegador para salvar como PDF/Imprimir
-function gerarRelatorioPDF() {
-    window.print();
+let historicoIdEmEdicao = null; // Guarda o ID se estivermos editando um registro existente
+
+async function carregarHistoricoDoBanco() {
+    if (!usuarioLogado) return;
+
+    const listaDiv = document.getElementById('listaHistorico');
+    listaDiv.innerHTML = "<div style='color: var(--text-dim); font-size: 0.9em;'>Carregando históricos...</div>";
+
+    try {
+        const snapshot = await db.collection("users").doc(usuarioLogado.uid).collection("historico").get();
+
+        if (snapshot.empty) {
+            listaDiv.innerHTML = "<div class='empty-msg'>Nenhum registro de manutenção salvo ainda.</div>";
+            return;
+        }
+
+        listaDiv.innerHTML = "";
+
+        snapshot.forEach(doc => {
+            const data = doc.data();
+            const docId = doc.id;
+
+            const card = document.createElement('div');
+            card.style.cssText = "background: #0f172a; border: 1px solid var(--border); padding: 12px; border-radius: 8px; margin-bottom: 10px;";
+
+            const itensHtml = data.itensConcluidos && data.itensConcluidos.length > 0 
+                ? data.itensConcluidos.map(item => `<li>✓ ${item}</li>`).join('') 
+                : '<li style="color: var(--text-dim);">Nenhum item marcado como concluído</li>';
+
+            card.innerHTML = `
+                <div style="display: flex; justify-content: space-between; align-items: center; font-weight: bold; font-size: 0.95em; color: var(--accent);">
+                    <span>🚗 ${data.veiculo}</span>
+                    <span style="color: var(--text-dim); font-size: 0.85em;">📅 ${data.dataRegistro}</span>
+                </div>
+                <div style="font-size: 0.85em; color: var(--text-dim); margin-top: 4px;">
+                    Odômetro: <strong>${data.odometro.toLocaleString('pt-BR')} km</strong>
+                </div>
+                <ul style="margin: 8px 0 8px 0; padding-left: 0; font-size: 0.85em; color: #22c55e; list-style-type: none;">
+                    ${itensHtml}
+                </ul>
+                <div style="display: flex; gap: 8px; margin-top: 10px;">
+                    <button type="button" class="btn-recarregar" style="width: auto; padding: 4px 10px; font-size: 0.8em; background: #0284c7; margin: 0;">
+                        📂 Carregar no Checklist
+                    </button>
+                    <button type="button" class="btn-excluir" style="width: auto; padding: 4px 10px; font-size: 0.8em; background: #ef4444; margin: 0;">
+                        🗑️ Excluir
+                    </button>
+                </div>
+            `;
+
+            // Ação do Botão "Carregar no Checklist"
+            card.querySelector('.btn-recarregar').addEventListener('click', () => {
+                recarregarParaFormulario(data, docId);
+            });
+
+            // Ação do Botão "Excluir"
+            card.querySelector('.btn-excluir').addEventListener('click', () => {
+                excluirHistoricoDoBanco(docId);
+            });
+
+            listaDiv.appendChild(card);
+        });
+
+    } catch (error) {
+        listaDiv.innerHTML = "<div style='color: #ef4444; font-size: 0.9em;'>Erro ao carregar histórico: " + error.message + "</div>";
+    }
+}
+
+// Função para preencher o formulário com os dados do histórico selecionado
+async function recarregarParaFormulario(dados, docId) {
+    historicoIdEmEdicao = docId;
+
+    // 1. Preenche a Quilometragem
+    document.getElementById('km').value = dados.odometro;
+
+    // 2. Extrai a Marca e o Modelo da string do veículo (ex: "VW - VolksWagen - GOL")
+    const partesVeiculo = dados.veiculo.split(" - ");
+    const nomeMarca = partesVeiculo[0];
+    const nomeModelo = partesVeiculo.slice(1).join(" - ");
+
+    const selectMarca = document.getElementById('marca');
+
+    // 3. Procura a marca no <select> pelo nome e seleciona
+    let marcaEncontrada = false;
+    for (let i = 0; i < selectMarca.options.length; i++) {
+        if (selectMarca.options[i].text.toLowerCase().includes(nomeMarca.toLowerCase())) {
+            selectMarca.selectedIndex = i;
+            marcaEncontrada = true;
+            break;
+        }
+    }
+
+    // 4. Carrega os modelos da marca selecionada e seleciona o modelo correto
+    if (marcaEncontrada) {
+        await carregarModelos();
+        const selectModelo = document.getElementById('modelo');
+        for (let i = 0; i < selectModelo.options.length; i++) {
+            if (selectModelo.options[i].value === nomeModelo) {
+                selectModelo.selectedIndex = i;
+                break;
+            }
+        }
+    }
+
+    // 5. Gera o checklist
+    gerarChecklist();
+
+    // 6. Marca os checkboxes dos itens que já tinham sido salvos como concluídos
+    if (dados.itensConcluidos && dados.itensConcluidos.length > 0) {
+        const checkboxes = document.querySelectorAll('#listaManutencao input[type="checkbox"]');
+        checkboxes.forEach(cb => {
+            if (dados.itensConcluidos.includes(cb.getAttribute('data-title'))) {
+                cb.checked = true;
+                const container = cb.closest('.task-item');
+                if (container) container.classList.add('completed');
+            }
+        });
+    }
+
+    // Rola a página suavemente de volta para o topo (para o formulário)
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+// Função para excluir um registro antigo do banco
+async function excluirHistoricoDoBanco(docId) {
+    if (!confirm("Tem certeza que deseja excluir esta revisão do seu histórico?")) return;
+
+    try {
+        await db.collection("users").doc(usuarioLogado.uid).collection("historico").doc(docId).delete();
+        alert("Registro excluído com sucesso!");
+        carregarHistoricoDoBanco();
+    } catch (error) {
+        alert("Erro ao excluir: " + error.message);
+    }
 }
