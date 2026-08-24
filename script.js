@@ -1,5 +1,5 @@
 // ==========================================
-// 1. CONFIGURAÇÃO DO FIREBASE
+// 1. CONFIGURAÇÃO DO FIREBASE (COLE SUAS CHAVES AQUI)
 // ==========================================
 const firebaseConfig = {
   apiKey: "AIzaSyAr2WewAfeddazQLBpV-JId3Tmq9Tx8s_M",
@@ -11,11 +11,13 @@ const firebaseConfig = {
   measurementId: "G-J33QTYLZN6"
 };
 
+// Inicialização do Firebase
 firebase.initializeApp(firebaseConfig);
 const auth = firebase.auth();
 const db = firebase.firestore();
 
 let usuarioLogado = null;
+let historicoIdEmEdicao = null;
 
 // ==========================================
 // 2. CONTROLE DE AUTENTICAÇÃO
@@ -30,14 +32,14 @@ auth.onAuthStateChanged(user => {
         userInfo.innerHTML = `👤 <strong>${user.email}</strong>`;
         btnAuth.textContent = "Sair";
         btnAuth.onclick = () => auth.signOut();
-        secaoHistorico.style.display = 'block';
+        if (secaoHistorico) secaoHistorico.style.display = 'block';
         carregarHistoricoDoBanco();
     } else {
         usuarioLogado = null;
         userInfo.innerHTML = "Modo Visitante";
         btnAuth.textContent = "Entrar / Cadastrar";
         btnAuth.onclick = gerenciarLogin;
-        secaoHistorico.style.display = 'none';
+        if (secaoHistorico) secaoHistorico.style.display = 'none';
     }
 });
 
@@ -60,7 +62,7 @@ function gerenciarLogin() {
 }
 
 // ==========================================
-// 3. API FIPE E CHECKLIST
+// 3. API FIPE E REGRAS DE CHECKLIST
 // ==========================================
 const API_FIPE_URL = "https://parallelum.com.br/fipe/api/v1/carros";
 
@@ -79,10 +81,17 @@ document.addEventListener("DOMContentLoaded", () => {
     carregarMarcas();
 
     document.getElementById('marca').addEventListener('change', carregarModelos);
-    document.getElementById('btnBuscar').addEventListener('click', gerarChecklist);
+    document.getElementById('btnBuscar').addEventListener('click', () => {
+        historicoIdEmEdicao = null; // Reseta edição ao gerar nova consulta manual
+        gerarChecklist();
+    });
     document.getElementById('btnExportarPdf').addEventListener('click', () => window.print());
-    document.getElementById('btnSalvarHistorico').addEventListener('click', salvarHistoricoNoBanco);
-    document.getElementById('btnCarregarHistorico').addEventListener('click', carregarHistoricoDoBanco);
+    
+    const btnSalvar = document.getElementById('btnSalvarHistorico');
+    if (btnSalvar) btnSalvar.addEventListener('click', salvarHistoricoNoBanco);
+
+    const btnAtualizarHist = document.getElementById('btnCarregarHistorico');
+    if (btnAtualizarHist) btnAtualizarHist.addEventListener('click', carregarHistoricoDoBanco);
 });
 
 async function carregarMarcas() {
@@ -123,7 +132,7 @@ async function carregarModelos() {
         selectModelo.innerHTML = '<option value="">-- Escolha o Modelo --</option>';
         data.modelos.forEach(modelo => {
             const option = document.createElement('option');
-            option.value = modelo.nome;
+            option.value = modelo.codigo; // Guarda o código numérico do modelo na FIPE
             option.textContent = modelo.nome;
             selectModelo.appendChild(option);
         });
@@ -136,7 +145,9 @@ async function carregarModelos() {
 function gerarChecklist() {
     const selectMarca = document.getElementById('marca');
     const marcaNome = selectMarca.options[selectMarca.selectedIndex]?.text || '';
-    const modeloNome = document.getElementById('modelo').value;
+    const selectModelo = document.getElementById('modelo');
+    const modeloNome = selectModelo.options[selectModelo.selectedIndex]?.text || selectModelo.value;
+    
     const kmAtual = parseInt(document.getElementById('km').value) || 0;
     const listaDiv = document.getElementById('listaManutencao');
     const btnPdf = document.getElementById('btnExportarPdf');
@@ -145,14 +156,16 @@ function gerarChecklist() {
 
     listaDiv.innerHTML = "";
 
-    if (!modeloNome || kmAtual <= 0) {
-        listaDiv.innerHTML = `<div class="empty-msg">Selecione o veículo e digite uma quilometragem válida.</div>`;
-        btnPdf.style.display = 'none';
-        btnSalvar.style.display = 'none';
+    if (!selectModelo.value || kmAtual <= 0) {
+        listaDiv.innerHTML = `<div class="empty-msg">Selecione a marca, o modelo e digite uma quilometragem válida.</div>`;
+        if (btnPdf) btnPdf.style.display = 'none';
+        if (btnSalvar) btnSalvar.style.display = 'none';
         return;
     }
 
-    infoPdf.innerHTML = `<strong>Veículo:</strong> ${marcaNome} - ${modeloNome} <br><strong>Odômetro:</strong> ${kmAtual.toLocaleString('pt-BR')} km`;
+    if (infoPdf) {
+        infoPdf.innerHTML = `<strong>Veículo:</strong> ${marcaNome} - ${modeloNome} <br><strong>Odômetro:</strong> ${kmAtual.toLocaleString('pt-BR')} km`;
+    }
 
     const pendencias = manutencaoPadrao.filter(item => {
         return (kmAtual % item.kmIntervalo === 0) || (kmAtual >= item.kmIntervalo);
@@ -188,13 +201,14 @@ function gerarChecklist() {
         });
     });
 
-    btnPdf.style.display = 'block';
-    btnSalvar.style.display = 'block';
+    if (btnPdf) btnPdf.style.display = 'block';
+    if (btnSalvar) btnSalvar.style.display = 'block';
 }
 
 // ==========================================
-// 4. BANCO DE DADOS: SALVAR E BUSCAR HISTÓRICO
+// 4. BANCO DE DADOS: FIRESTORE (SALVAR, LER, CARREGAR E EXCLUIR)
 // ==========================================
+
 async function salvarHistoricoNoBanco() {
     if (!usuarioLogado) {
         alert("Você precisa estar logado para salvar no histórico!");
@@ -203,34 +217,51 @@ async function salvarHistoricoNoBanco() {
     }
 
     const selectMarca = document.getElementById('marca');
+    const codigoMarca = selectMarca.value;
     const marcaNome = selectMarca.options[selectMarca.selectedIndex]?.text || '';
-    const modeloNome = document.getElementById('modelo').value;
+
+    const selectModelo = document.getElementById('modelo');
+    const codigoModelo = selectModelo.value;
+    const modeloNome = selectModelo.options[selectModelo.selectedIndex]?.text || selectModelo.value;
+
     const kmAtual = parseInt(document.getElementById('km').value) || 0;
 
     const checkboxes = document.querySelectorAll('#listaManutencao input[type="checkbox"]:checked');
     const itensConcluidos = Array.from(checkboxes).map(cb => cb.getAttribute('data-title'));
 
-    try {
-        await db.collection("users").doc(usuarioLogado.uid).collection("historico").add({
-            veiculo: `${marcaNome} - ${modeloNome}`,
-            odometro: kmAtual,
-            itensConcluidos: itensConcluidos,
-            dataRegistro: new Date().toLocaleDateString('pt-BR')
-        });
+    const dadosParaSalvar = {
+        veiculo: `${marcaNome} - ${modeloNome}`,
+        codigoMarca: codigoMarca,
+        codigoModelo: codigoModelo,
+        odometro: kmAtual,
+        itensConcluidos: itensConcluidos,
+        dataRegistro: new Date().toLocaleDateString('pt-BR')
+    };
 
-        alert("Revisão salva no seu histórico com sucesso!");
-        carregarHistoricoDoBanco(); // Atualiza a lista na tela imediatamente
+    try {
+        if (historicoIdEmEdicao) {
+            // Atualiza registro existente se carregou do histórico
+            await db.collection("users").doc(usuarioLogado.uid).collection("historico").doc(historicoIdEmEdicao).update(dadosParaSalvar);
+            alert("Revisão atualizada no histórico com sucesso!");
+            historicoIdEmEdicao = null;
+        } else {
+            // Cria um novo registro
+            await db.collection("users").doc(usuarioLogado.uid).collection("historico").add(dadosParaSalvar);
+            alert("Nova revisão salva no seu histórico com sucesso!");
+        }
+
+        carregarHistoricoDoBanco();
     } catch (error) {
         alert("Erro ao salvar histórico: " + error.message);
     }
 }
 
-let historicoIdEmEdicao = null; // Guarda o ID se estivermos editando um registro existente
-
 async function carregarHistoricoDoBanco() {
     if (!usuarioLogado) return;
 
     const listaDiv = document.getElementById('listaHistorico');
+    if (!listaDiv) return;
+
     listaDiv.innerHTML = "<div style='color: var(--text-dim); font-size: 0.9em;'>Carregando históricos...</div>";
 
     try {
@@ -275,12 +306,10 @@ async function carregarHistoricoDoBanco() {
                 </div>
             `;
 
-            // Ação do Botão "Carregar no Checklist"
             card.querySelector('.btn-recarregar').addEventListener('click', () => {
                 recarregarParaFormulario(data, docId);
             });
 
-            // Ação do Botão "Excluir"
             card.querySelector('.btn-excluir').addEventListener('click', () => {
                 excluirHistoricoDoBanco(docId);
             });
@@ -293,56 +322,44 @@ async function carregarHistoricoDoBanco() {
     }
 }
 
-// Função para preencher o formulário com os dados do histórico selecionado
 async function recarregarParaFormulario(dados, docId) {
     historicoIdEmEdicao = docId;
 
     // 1. Preenche a Quilometragem
     document.getElementById('km').value = dados.odometro;
 
-    // 2. Separa Marca e Modelo da string (Ex: "VW - VolksWagen - GOL 1.0")
-    const partesVeiculo = dados.veiculo.split(" - ");
-    const nomeMarca = partesVeiculo[0].trim();
-    // O modelo pode conter hífens no nome, então juntamos o restante das partes
-    const nomeModelo = partesVeiculo.slice(1).join(" - ").trim();
-
     const selectMarca = document.getElementById('marca');
 
-    // 3. Procura e seleciona a Marca no <select>
-    let marcaEncontrada = false;
-    for (let i = 0; i < selectMarca.options.length; i++) {
-        const textoOpcao = selectMarca.options[i].text.toLowerCase();
-        if (textoOpcao.includes(nomeMarca.toLowerCase())) {
-            selectMarca.selectedIndex = i;
-            marcaEncontrada = true;
-            break;
-        }
-    }
-
-    // 4. Se a marca foi encontrada, força o carregamento dos modelos na API FIPE
-    if (marcaEncontrada) {
-        // Aguarda a requisição da API FIPE trazer todos os modelos
-        await carregarModelos();
-
-        const selectModelo = document.getElementById('modelo');
-
-        // Procura o modelo exato na lista retornada
-        let modeloEncontrado = false;
-        for (let i = 0; i < selectModelo.options.length; i++) {
-            if (selectModelo.options[i].value.toLowerCase() === nomeModelo.toLowerCase()) {
-                selectModelo.selectedIndex = i;
-                modeloEncontrado = true;
+    // 2. Seleciona a Marca
+    if (dados.codigoMarca) {
+        selectMarca.value = dados.codigoMarca;
+    } else {
+        const partes = dados.veiculo.split(" - ");
+        const nomeMarca = partes[0].trim().toLowerCase();
+        for (let i = 0; i < selectMarca.options.length; i++) {
+            if (selectMarca.options[i].text.toLowerCase().includes(nomeMarca)) {
+                selectMarca.selectedIndex = i;
                 break;
             }
         }
+    }
 
-        // Se não achou por correspondência exata, tenta encontrar por aproximação
-        if (!modeloEncontrado) {
-            for (let i = 0; i < selectModelo.options.length; i++) {
-                if (selectModelo.options[i].text.toLowerCase().includes(nomeModelo.toLowerCase())) {
-                    selectModelo.selectedIndex = i;
-                    break;
-                }
+    // 3. Força o carregamento dos modelos na FIPE e aguarda a promessa ser resolvida
+    await carregarModelos();
+
+    const selectModelo = document.getElementById('modelo');
+
+    // 4. Seleciona o Modelo (Pelo código exato da FIPE ou por aproximação do nome)
+    if (dados.codigoModelo) {
+        selectModelo.value = dados.codigoModelo;
+    } else {
+        const partes = dados.veiculo.split(" - ");
+        const nomeModelo = partes.slice(1).join(" - ").trim().toLowerCase();
+        for (let i = 0; i < selectModelo.options.length; i++) {
+            const textoOpcao = selectModelo.options[i].text.toLowerCase();
+            if (textoOpcao === nomeModelo || textoOpcao.includes(nomeModelo)) {
+                selectModelo.selectedIndex = i;
+                break;
             }
         }
     }
@@ -350,7 +367,7 @@ async function recarregarParaFormulario(dados, docId) {
     // 5. Gera o checklist
     gerarChecklist();
 
-    // 6. Marca os checkboxes dos itens salvos anteriormente
+    // 6. Marca os checkboxes dos itens já concluídos
     if (dados.itensConcluidos && dados.itensConcluidos.length > 0) {
         const checkboxes = document.querySelectorAll('#listaManutencao input[type="checkbox"]');
         checkboxes.forEach(cb => {
@@ -362,10 +379,10 @@ async function recarregarParaFormulario(dados, docId) {
         });
     }
 
-    // Rola a página suavemente para o topo
+    // Rola até o topo da página suavemente
     window.scrollTo({ top: 0, behavior: 'smooth' });
 }
-// Função para excluir um registro antigo do banco
+
 async function excluirHistoricoDoBanco(docId) {
     if (!confirm("Tem certeza que deseja excluir esta revisão do seu histórico?")) return;
 
