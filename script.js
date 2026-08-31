@@ -1,4 +1,3 @@
-// 1. CONFIGURAÇÃO DO FIREBASE
 const firebaseConfig = {
   apiKey: "AIzaSyAr2WewAfeddazQLBpV-JId3Tmq9Tx8s_M",
   authDomain: "helpcardb.firebaseapp.com",
@@ -18,7 +17,6 @@ let perfilUsuario = null;
 let historicoIdEmEdicao = null;
 let modoCadastro = false;
 
-// 2. GESTÃO DE SESSÃO E CONTROLE DE PERFIL
 auth.onAuthStateChanged(async user => {
     const userInfo = document.getElementById('userInfo');
     const btnAuth = document.getElementById('btnAuth');
@@ -61,7 +59,6 @@ auth.onAuthStateChanged(async user => {
     }
 });
 
-// 3. CONTROLE DO MODAL DE AUTENTICAÇÃO
 function abrirModalAuth() {
     modoCadastro = false;
     atualizarCamposModal();
@@ -123,8 +120,85 @@ document.getElementById('formAuth')?.addEventListener('submit', async (e) => {
     }
 });
 
-// 4. API FIPE E CHECKLIST
-const API_FIPE_URL = "https://parallelum.com.br/fipe/api/v1/carros";
+// URL da API pública da FIPE
+const FIPE_API_URL = "https://parallelum.com.br/fipe/api/v1/carros";
+
+// Inicializa a busca de Marcas via API
+async function carregarMarcasAPI() {
+    const selectMarca = document.getElementById('selectMarca');
+    const selectModelo = document.getElementById('selectModelo');
+
+    if (!selectMarca || !selectModelo) return;
+
+    selectMarca.innerHTML = '<option value="">Carregando marcas...</option>';
+    selectMarca.disabled = true;
+
+    try {
+        const response = await fetch(`${FIPE_API_URL}/marcas`);
+        const marcas = await response.json();
+
+        selectMarca.innerHTML = '<option value="">-- Escolha a Marca --</option>';
+        marcas.forEach(marca => {
+            const option = document.createElement('option');
+            option.value = marca.codigo; // Guarda o ID/Código da marca
+            option.dataset.nome = marca.nome;
+            option.textContent = marca.nome;
+            selectMarca.appendChild(option);
+        });
+
+        selectMarca.disabled = false;
+    } catch (error) {
+        console.error("Erro ao carregar marcas da API FIPE:", error);
+        selectMarca.innerHTML = '<option value="">Erro ao carregar marcas</option>';
+    }
+}
+
+// Busca os Modelos da marca selecionada via API
+async function carregarModelosAPI(codigoMarca) {
+    const selectModelo = document.getElementById('selectModelo');
+    if (!selectModelo) return;
+
+    selectModelo.innerHTML = '<option value="">Carregando modelos...</option>';
+    selectModelo.disabled = true;
+
+    try {
+        const response = await fetch(`${FIPE_API_URL}/marcas/${codigoMarca}/modelos`);
+        const data = await response.json();
+
+        selectModelo.innerHTML = '<option value="">-- Escolha o Modelo --</option>';
+        data.modelos.forEach(modelo => {
+            const option = document.createElement('option');
+            option.value = modelo.nome;
+            option.textContent = modelo.nome;
+            selectModelo.appendChild(option);
+        });
+
+        selectModelo.disabled = false;
+    } catch (error) {
+        console.error("Erro ao carregar modelos da API FIPE:", error);
+        selectModelo.innerHTML = '<option value="">Erro ao carregar modelos</option>';
+    }
+}
+
+// Listeners de evento ao carregar a página
+document.addEventListener('DOMContentLoaded', () => {
+    carregarMarcasAPI();
+
+    const selectMarca = document.getElementById('selectMarca');
+    const selectModelo = document.getElementById('selectModelo');
+
+    if (selectMarca) {
+        selectMarca.addEventListener('change', (e) => {
+            const codigoMarca = e.target.value;
+            if (codigoMarca) {
+                carregarModelosAPI(codigoMarca);
+            } else {
+                selectModelo.innerHTML = '<option value="">Selecione a marca primeiro</option>';
+                selectModelo.disabled = true;
+            }
+        });
+    }
+});
 
 const manutencaoPadrao = [
     { kmIntervalo: 10000, item: "Troca de Óleo do Motor + Filtro", desc: "Verificar especificação e viscosidade recomendada no manual.", cat: "Básico" },
@@ -261,7 +335,6 @@ function gerarChecklist() {
     if (btnOrcamento) btnOrcamento.style.display = 'block';
 }
 
-// 5. HISTÓRICO DE MANUTENÇÃO
 async function salvarHistoricoNoBanco() {
     if (!usuarioLogado) {
         alert("Você precisa estar logado!");
@@ -409,7 +482,6 @@ async function excluirHistoricoDoBanco(docId) {
     }
 }
 
-// 6. MÓDULO DE ORÇAMENTOS & CHAMADOS
 async function solicitarOrcamentoMecanico() {
     if (!usuarioLogado) {
         alert("Você precisa estar logado para solicitar orçamentos!");
@@ -449,13 +521,10 @@ async function solicitarOrcamentoMecanico() {
     }
 }
 
-// Variáveis globais para controle do chat aberto
 let chatOrcamentoIdAtual = null;
 let chatPropostaIdAtual = null;
 let unsubscribeChatListener = null;
 
-// 1. Atualizada: Renderização dos chamados com o botão de Abrir Chat
-// Função carregarOrcamentos com suporte a Aceitar Proposta / Concluir Chamado
 async function carregarOrcamentos() {
     if (!usuarioLogado) return;
     const listaDiv = document.getElementById('listaOrcamentos');
@@ -493,7 +562,6 @@ async function carregarOrcamentos() {
             let acoesHtml = "";
             let propostasHtml = "";
 
-            // Busca as propostas para este chamado
             const propostasSnapshot = await db.collection("orcamentos").doc(docId).collection("propostas").get();
 
             if (!propostasSnapshot.empty) {
@@ -542,7 +610,6 @@ async function carregarOrcamentos() {
                 `;
             }
 
-            // Define a cor da tag de status
             let corStatus = "#334155";
             if (data.status === "Resolvido") corStatus = "#10b981";
             if (data.status === "Cancelado") corStatus = "#ef4444";
@@ -579,7 +646,6 @@ async function carregarOrcamentos() {
     }
 }
 
-// 2. Lógica de Abertura e Envio de Mensagens no Chat
 function abrirModalChat(orcamentoId, propostaId) {
     chatOrcamentoIdAtual = orcamentoId;
     chatPropostaIdAtual = propostaId;
@@ -606,7 +672,6 @@ function ouvirMensagensChat() {
                       .collection("mensagens")
                       .orderBy("timestamp", "asc");
 
-    // O onSnapshot atualiza as mensagens em tempo real
     unsubscribeChatListener = chatRef.onSnapshot((snapshot) => {
         if (snapshot.empty) {
             chatBox.innerHTML = "<div class='empty-msg'>Nenhuma mensagem enviada ainda. Digite abaixo para negociar!</div>";
@@ -704,7 +769,6 @@ async function cancelarOrcamento(orcamentoId) {
     }
 }
 
-// Função para fechar o chamado com a proposta escolhida
 async function finalizarChamado(orcamentoId, oficinaEscolhida) {
     const confirmacao = confirm(`Deseja aceitar a proposta da oficina ${oficinaEscolhida} e marcar o chamado como Resolvido?`);
     
