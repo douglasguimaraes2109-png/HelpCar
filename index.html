@@ -3,146 +3,141 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Checklist de Manutenção Automotiva</title>
+    <title>AutoCheck - Manutenção Veicular</title>
     <link rel="stylesheet" href="style.css">
-    <!-- Firebase SDKs (v8) -->
-    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
 </head>
 <body>
 
-    <header class="navbar">
+    <!-- NAVBAR -->
+    <nav class="navbar">
         <div class="logo">🚗 AutoCheck</div>
-        <div class="user-area">
-            <span id="userInfo">Modo Visitante</span>
-            <button id="btnAuth" class="btn-auth">Entrar / Cadastrar</button>
+        <div class="user-area" id="userArea">
+            <span id="userStatus">Modo Visitante</span>
+            <button type="button" class="btn-auth" id="btnOpenAuth">Entrar / Cadastrar</button>
         </div>
-    </header>
+    </nav>
 
+    <!-- ESTRUTURA PRINCIPAL -->
     <main class="container">
-        <!-- Formulário de Seleção do Veículo -->
+        
+        <!-- CARD: SELEÇÃO DE VEÍCULO -->
         <section class="card">
             <h2>Selecione o Veículo</h2>
             <div class="form-grid">
                 <div class="form-group">
-                    <label for="marca">Marca:</label>
-                    <select id="marca">
-                        <option value="">Carregando marcas...</option>
+                    <label for="selectMarca">Marca:</label>
+                    <select id="selectMarca">
+                        <option value="">-- Escolha a Marca --</option>
                     </select>
                 </div>
-
                 <div class="form-group">
-                    <label for="modelo">Modelo:</label>
-                    <select id="modelo" disabled>
+                    <label for="selectModelo">Modelo:</label>
+                    <select id="selectModelo">
                         <option value="">Selecione a marca primeiro</option>
                     </select>
                 </div>
-
                 <div class="form-group">
-                    <label for="km">Quilometragem Atual (km):</label>
-                    <input type="number" id="km" placeholder="Ex: 45000" min="0">
+                    <label for="inputKm">Quilometragem Atual (km):</label>
+                    <input type="number" id="inputKm" placeholder="Ex: 45000">
                 </div>
             </div>
-
-            <button id="btnBuscar" class="btn-primary" style="margin-top: 15px;">Gerar Checklist</button>
+            
+            <button type="button" class="btn-primary" id="btnGerarChecklist" style="margin-top: 16px;">
+                Gerar Checklist
+            </button>
         </section>
 
-        <!-- Relatório PDF (visível na impressão) -->
-        <div id="infoVeiculoPdf" class="info-pdf"></div>
-
-        <!-- Checklist de Manutenção -->
+        <!-- CARD: ITENS DE REVISÃO -->
         <section class="card">
             <h2>Itens de Revisão</h2>
-            <div id="listaManutencao">
+            <div id="listaItens">
                 <div class="empty-msg">Selecione o veículo e digite a quilometragem para exibir os itens.</div>
             </div>
-
-            <div class="actions-group">
-                <button id="btnExportarPdf" class="btn-secondary" style="display: none;">🖨️ Exportar / Imprimir PDF</button>
-                <button id="btnSalvarHistorico" class="btn-success" style="display: none;">💾 Salvar no Historico</button>
-                <button id="btnSolicitarOrcamento" class="btn-warning" style="display: none;">💬 Solicitar Orçamento</button>
+            <div class="actions-group" id="acoesChecklist" style="display: none;">
+                <button type="button" class="btn-secondary" onclick="window.print()">🖨️ Imprimir / Salvar PDF</button>
+                <button type="button" class="btn-success" id="btnSolicitarOrcamento">📩 Solicitar Orçamento no Mural</button>
             </div>
         </section>
 
-        <!-- Histórico Pessoal (Motorista) -->
-        <section id="secaoHistorico" class="card" style="display: none;">
-            <h2>Meu Histórico de Revisões</h2>
-            <div id="listaHistorico"></div>
+        <!-- CARD: MURAL DE CHAMADOS -->
+        <section class="card" id="secaoOrcamentos">
+            <h2>Mural de Chamados & Orçamentos</h2>
+            <div id="listaOrcamentos">
+                <div class="empty-msg">Faça login para visualizar chamados e orçamentos.</div>
+            </div>
         </section>
 
-        <!-- Módulo de Orçamentos -->
-        <section id="secaoOrcamentos" class="card" style="display: none;">
-            <h2>Mural de Chamados & Orçamentos</h2>
-            <div id="listaOrcamentos"></div>
-        </section>
     </main>
 
-    <!-- Modal de Autenticação -->
+    <!-- MODAL DE AUTENTICAÇÃO -->
     <div id="modalAuth" class="modal-backdrop" style="display: none;">
         <div class="modal-content">
             <div class="modal-header">
                 <h2 id="modalTitle">Acessar Conta</h2>
-                <button type="button" class="btn-close" onclick="fecharModalAuth()">&times;</button>
+                <button type="button" class="btn-close" id="btnCloseAuth">&times;</button>
             </div>
             
             <form id="formAuth">
                 <div class="form-group">
                     <label for="authEmail">E-mail</label>
-                    <input type="email" id="authEmail" placeholder="seu@email.com" required autocomplete="email">
+                    <input type="email" id="authEmail" placeholder="seu@email.com" required>
                 </div>
-
+                
                 <div class="form-group">
-                    <label for="authSenha">Senha</label>
-                    <input type="password" id="authSenha" placeholder="••••••••" required autocomplete="current-password">
+                    <label for="authPassword">Senha</label>
+                    <input type="password" id="authPassword" placeholder="••••••••" required>
                 </div>
 
-                <!-- Perfil (Cadastro) -->
-                <div id="campoTipoPerfil" class="form-group" style="display: none;">
-                    <label>Tipo de Conta</label>
+                <!-- Campo exclusivo do Cadastro -->
+                <div id="grupoTipoUsuario" class="form-group" style="display: none;">
+                    <label>Tipo de Conta:</label>
                     <div class="radio-group">
                         <label class="radio-option">
-                            <input type="radio" name="tipoConta" value="cliente" checked> 
-                            🚗 Motorista
+                            <input type="radio" name="tipoUsuario" value="motorista" checked> Motorista
                         </label>
                         <label class="radio-option">
-                            <input type="radio" name="tipoConta" value="mecanico"> 
-                            🔧 Oficina
+                            <input type="radio" name="tipoUsuario" value="mecanico"> Oficina / Mecânico
                         </label>
                     </div>
                 </div>
 
-                <button type="submit" id="btnSubmitAuth" class="btn-primary">Entrar</button>
+                <button type="submit" class="btn-primary" id="btnSubmitAuth">Entrar</button>
             </form>
 
             <div class="modal-footer">
-                <span id="textoTrocaModo">Ainda não tem uma conta?</span>
-                <a href="#" id="linkTrocaModo" onclick="alternarModoAuth(event)">Cadastre-se</a>
+                <span id="textToggleAuth">Ainda não tem uma conta?</span>
+                <a href="#" id="linkToggleAuth">Cadastre-se</a>
             </div>
         </div>
     </div>
 
-    <!-- Modal de Chat/Negociação -->
-<div id="modalChat" class="modal-backdrop" style="display: none;">
-    <div class="modal-content" style="max-width: 500px;">
-        <div class="modal-header">
-            <h2 style="font-size: 1.1rem; color: var(--accent);">💬 Negociação da Proposta</h2>
-            <button type="button" class="btn-close" onclick="fecharModalChat()">&times;</button>
-        </div>
-        
-        <!-- Área onde as mensagens aparecem -->
-        <div id="chatMessages" style="height: 280px; overflow-y: auto; background: #0f172a; padding: 12px; border-radius: 8px; border: 1px solid var(--border); display: flex; flex-direction: column; gap: 10px; margin-bottom: 12px;">
-            <div class="empty-msg">Carregando mensagens...</div>
-        </div>
+    <!-- MODAL DE CHAT / NEGOCIAÇÃO -->
+    <div id="modalChat" class="modal-backdrop" style="display: none;">
+        <div class="modal-content" style="max-width: 500px;">
+            <div class="modal-header">
+                <h2 style="font-size: 1.1rem; color: var(--accent);">💬 Negociação da Proposta</h2>
+                <button type="button" class="btn-close" onclick="fecharModalChat()">&times;</button>
+            </div>
+            
+            <!-- Área das mensagens do chat -->
+            <div id="chatMessages" style="height: 280px; overflow-y: auto; background: #0f172a; padding: 12px; border-radius: 8px; border: 1px solid var(--border); display: flex; flex-direction: column; gap: 10px; margin-bottom: 12px;">
+                <div class="empty-msg">Carregando mensagens...</div>
+            </div>
 
-        <!-- Formulário para envio de mensagem -->
-        <form id="formChat" style="display: flex; gap: 8px;">
-            <input type="text" id="chatInput" placeholder="Digite sua mensagem..." required style="flex: 1;">
-            <button type="submit" class="btn-primary" style="width: auto; padding: 0 16px;">Enviar</button>
-        </form>
+            <!-- Input e envio -->
+            <form id="formChat" style="display: flex; gap: 8px;">
+                <input type="text" id="chatInput" placeholder="Digite sua mensagem..." required style="flex: 1;">
+                <button type="submit" class="btn-primary" style="width: auto; padding: 0 16px;">Enviar</button>
+            </form>
+        </div>
     </div>
-</div>
 
+    <!-- SDKs do Firebase -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore-compat.js"></script>
+    
+    <!-- Script principal da aplicação -->
     <script src="script.js"></script>
 </body>
 </html>
