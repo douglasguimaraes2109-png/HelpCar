@@ -3,141 +3,179 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AutoCheck - Manutenção Veicular</title>
+    <title>HelpCar - Painel do Motorista</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
-    <!-- NAVBAR -->
-    <nav class="navbar">
-        <div class="logo">🚗 AutoCheck</div>
-        <div class="user-area" id="userArea">
-            <span id="userStatus">Modo Visitante</span>
-            <button type="button" class="btn-auth" id="btnOpenAuth">Entrar / Cadastrar</button>
+    <!-- NAVBAR / CABEÇALHO -->
+    <header class="navbar" style="display: flex; align-items: center; justify-content: space-between;">
+        <div class="logo">
+            <span>🚗</span>
+            <strong>Help<span>Car</span></strong>
         </div>
-    </nav>
+        <div class="user-area" style="display: flex; align-items: center;">
+            <span class="user-status">Olá, Motorista</span>
+            <button type="button" class="btn-auth" id="btnOpenSidebar">Menu</button>
+        </div>
+    </header>
 
-    <!-- ESTRUTURA PRINCIPAL -->
-    <main class="container">
+    <!-- MENU LATERAL (SIDEBAR) -->
+    <div class="sidebar-overlay" id="sidebarOverlay"></div>
+    <aside class="sidebar" id="sidebar" aria-hidden="true">
         
-        <!-- CARD: SELEÇÃO DE VEÍCULO -->
-        <section class="card">
-            <h2>Selecione o Veículo</h2>
-            <div class="form-grid">
+        <!-- TOPO DA SIDEBAR (LOGO À ESQUERDA, BOTÃO X À DIREITA) -->
+        <div class="sidebar-top" style="display: flex !important; align-items: center !important; justify-content: space-between !important; width: 100% !important;">
+            
+            <!-- LOGO E TEXTO À ESQUERDA -->
+            <div class="sidebar-brand" style="display: flex !important; align-items: center !important; gap: 10px !important;">
+                <div class="sidebar-logo">🚗</div>
+                <div>
+                    <strong>Help<span>Car</span></strong>
+                    <small style="display: block;">PAINEL DO MOTORISTA</small>
+                </div>
+            </div>
+
+            <!-- BOTÃO FECHAR À DIREITA (AFASTADO DA BORDA DIREITA) -->
+            <button type="button" class="sidebar-close" id="btnCloseMenu" aria-label="Fechar menu" style="margin-left: auto !important; margin-right: 16px !important; flex-shrink: 0 !important;">&times;</button>
+
+        </div>
+
+        <div class="sidebar-user">
+            <div class="sidebar-user-avatar">👤</div>
+            <div class="sidebar-user-copy">
+                <strong id="sidebarUserName">Visitante</strong>
+                <span id="sidebarUserEmail">Entre para acessar sua conta</span>
+            </div>
+        </div>
+
+        <div class="sidebar-label">NAVEGAÇÃO</div>
+        <nav class="sidebar-nav">
+            <button type="button" class="sidebar-item active" data-target="topoPagina">
+                <span class="sidebar-item-icon">⌂</span>
+                <span>Início</span>
+                <span class="sidebar-arrow">›</span>
+            </button>
+            <button type="button" class="sidebar-item" data-target="secaoVeiculo">
+                <span class="sidebar-item-icon">🚗</span>
+                <span>Meu veículo</span>
+                <span class="sidebar-arrow">›</span>
+            </button>
+            <button type="button" class="sidebar-item" data-target="secaoChecklist">
+                <span class="sidebar-item-icon">🔧</span>
+                <span>Manutenção</span>
+                <span class="sidebar-arrow">›</span>
+            </button>
+            <button type="button" class="sidebar-item" data-target="secaoOrcamentos">
+                <span class="sidebar-item-icon">📋</span>
+                <span>Chamados & orçamentos</span>
+                <span class="sidebar-arrow">›</span>
+            </button>
+            <button type="button" class="sidebar-item" id="btnSidebarAccount">
+                <span class="sidebar-item-icon">👤</span>
+                <span>Minha conta</span>
+                <span class="sidebar-arrow">›</span>
+            </button>
+        </nav>
+
+        <div class="sidebar-divider"></div>
+        <div class="sidebar-label">SISTEMA</div>
+        <nav class="sidebar-nav">
+            <button type="button" class="sidebar-item" id="btnSidebarHelp">
+                <span class="sidebar-item-icon">?</span>
+                <span>Como funciona</span>
+                <span class="sidebar-arrow">›</span>
+            </button>
+        </nav>
+
+        <div class="sidebar-bottom">
+            <div class="sidebar-tip">
+                <span>✦</span>
+                <div><strong>Dica HelpCar</strong><small>Mantenha o checklist atualizado para evitar surpresas.</small></div>
+            </div>
+            <button type="button" class="sidebar-logout" id="btnSidebarLogout">
+                <span>↪</span>
+                <span>Sair da conta</span>
+            </button>
+        </div>
+    </aside>
+
+    <!-- CONTEÚDO PRINCIPAL -->
+    <main class="container" id="topoPagina">
+
+        <!-- HERO / BANNER DE DESTAQUE -->
+        <section class="hc-hero">
+            <div class="hc-hero-copy">
+                <span>CONTROLE SUA MANUTENÇÃO</span>
+                <h1>Seu carro em dia. <br><b>Sem complicação.</b> </h1>
+                <p>Checklist inteligente, histórico de manutenção e orçamentos de oficinas em um só lugar.</p>
+                <div class="hc-hero-chips">
+                    <i>FIPE</i>
+                    <i>CHECKLIST</i>
+                    <i>ORÇAMENTOS</i>
+                </div>
+            </div>
+            <div class="hc-hero-art">
+                <div class="hc-ring r1"></div>
+                <div class="hc-ring r2"></div>
+                <strong>🚘</strong>
+            </div>
+        </section>
+
+        <!-- SECÇÃO MEU VEÍCULO E FORMULÁRIO -->
+        <section class="card" id="secaoVeiculo" style="margin-top: 20px;">
+            <h2>Informações do Veículo</h2>
+            <form class="form-grid" style="display: grid;">
                 <div class="form-group">
-                    <label for="selectMarca">Marca:</label>
+                    <label for="selectMarca">Marca</label>
                     <select id="selectMarca">
-                        <option value="">-- Escolha a Marca --</option>
+                        <option value="">Selecione a marca</option>
+                        <option value="volkswagen">Volkswagen</option>
+                        <option value="chevrolet">Chevrolet</option>
+                        <option value="fiat">Fiat</option>
                     </select>
                 </div>
                 <div class="form-group">
-                    <label for="selectModelo">Modelo:</label>
-                    <select id="selectModelo">
-                        <option value="">Selecione a marca primeiro</option>
-                    </select>
-                </div>
-                <div class="form-group">
-                    <label for="inputKm">Quilometragem Atual (km):</label>
+                    <label for="inputKm">Quilometragem Atual</label>
                     <input type="number" id="inputKm" placeholder="Ex: 45000">
                 </div>
-            </div>
-            
-            <button type="button" class="btn-primary" id="btnGerarChecklist" style="margin-top: 16px;">
-                Gerar Checklist
-            </button>
+                <div class="form-group" style="display: flex; align-items: flex-end;">
+                    <button type="button" class="btn-primary" id="btnGerarChecklist" style="width: 100%;">Gerar Checklist</button>
+                </div>
+            </form>
         </section>
 
-        <!-- CARD: ITENS DE REVISÃO -->
-        <section class="card">
-            <h2>Itens de Revisão</h2>
-            <div id="listaItens">
-                <div class="empty-msg">Selecione o veículo e digite a quilometragem para exibir os itens.</div>
-            </div>
-            <div class="actions-group" id="acoesChecklist" style="display: none;">
-                <button type="button" class="btn-secondary" onclick="window.print()">🖨️ Imprimir / Salvar PDF</button>
-                <button type="button" class="btn-success" id="btnSolicitarOrcamento">📩 Solicitar Orçamento no Mural</button>
+        <!-- SECÇÃO CHECKLIST DE MANUTENÇÃO -->
+        <section class="card" id="secaoChecklist" style="margin-top: 20px;">
+            <h2>Checklist de Manutenção</h2>
+            <div id="listaTarefas">
+                <div class="task-item">
+                    <div class="task-title">Troca do Óleo do Motor</div>
+                    <div class="task-desc">Recomendado a cada 10.000 km ou 12 meses.</div>
+                    <span class="task-tag">Essencial</span>
+                </div>
             </div>
         </section>
-
-        <!-- CARD: MURAL DE CHAMADOS -->
-        <section class="card" id="secaoOrcamentos">
-            <h2>Mural de Chamados & Orçamentos</h2>
-            <div id="listaOrcamentos">
-                <div class="empty-msg">Faça login para visualizar chamados e orçamentos.</div>
+compl
+        <!-- SECÇÃO MURAL DE ORÇAMENTOS -->
+        <section class="card" id="secaoOrcamentos" style="margin-top: 20px;">
+            <h2>Chamados & Orçamentos</h2>
+            <div class="call-card">
+                <div class="call-header">
+                    <span>Revisão Geral dos 50.000 km</span>
+                    <span class="call-status">Aberto</span>
+                </div>
+                <div class="call-meta">Publicado recentemente</div>
+                <div class="call-items">Inclui: Troca de filtros, velas e alinhamento/balanceamento.</div>
             </div>
         </section>
 
     </main>
 
-    <!-- MODAL DE AUTENTICAÇÃO -->
-    <div id="modalAuth" class="modal-backdrop" style="display: none;">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h2 id="modalTitle">Acessar Conta</h2>
-                <button type="button" class="btn-close" id="btnCloseAuth">&times;</button>
-            </div>
-            
-            <form id="formAuth">
-                <div class="form-group">
-                    <label for="authEmail">E-mail</label>
-                    <input type="email" id="authEmail" placeholder="seu@email.com" required>
-                </div>
-                
-                <div class="form-group">
-                    <label for="authPassword">Senha</label>
-                    <input type="password" id="authPassword" placeholder="••••••••" required>
-                </div>
+    <!-- RODAPÉ -->
+    <footer class="footer" style="text-align: center; padding: 20px; margin-top: 40px; font-size: 0.8rem;">
+        <p>&copy; 2026 HelpCar - Todos os direitos reservados.</p>
+    </footer>
 
-                <!-- Campo exclusivo do Cadastro -->
-                <div id="grupoTipoUsuario" class="form-group" style="display: none;">
-                    <label>Tipo de Conta:</label>
-                    <div class="radio-group">
-                        <label class="radio-option">
-                            <input type="radio" name="tipoUsuario" value="motorista" checked> Motorista
-                        </label>
-                        <label class="radio-option">
-                            <input type="radio" name="tipoUsuario" value="mecanico"> Oficina / Mecânico
-                        </label>
-                    </div>
-                </div>
-
-                <button type="submit" class="btn-primary" id="btnSubmitAuth">Entrar</button>
-            </form>
-
-            <div class="modal-footer">
-                <span id="textToggleAuth">Ainda não tem uma conta?</span>
-                <a href="#" id="linkToggleAuth">Cadastre-se</a>
-            </div>
-        </div>
-    </div>
-
-    <!-- MODAL DE CHAT / NEGOCIAÇÃO -->
-    <div id="modalChat" class="modal-backdrop" style="display: none;">
-        <div class="modal-content" style="max-width: 500px;">
-            <div class="modal-header">
-                <h2 style="font-size: 1.1rem; color: var(--accent);">💬 Negociação da Proposta</h2>
-                <button type="button" class="btn-close" onclick="fecharModalChat()">&times;</button>
-            </div>
-            
-            <!-- Área das mensagens do chat -->
-            <div id="chatMessages" style="height: 280px; overflow-y: auto; background: #0f172a; padding: 12px; border-radius: 8px; border: 1px solid var(--border); display: flex; flex-direction: column; gap: 10px; margin-bottom: 12px;">
-                <div class="empty-msg">Carregando mensagens...</div>
-            </div>
-
-            <!-- Input e envio -->
-            <form id="formChat" style="display: flex; gap: 8px;">
-                <input type="text" id="chatInput" placeholder="Digite sua mensagem..." required style="flex: 1;">
-                <button type="submit" class="btn-primary" style="width: auto; padding: 0 16px;">Enviar</button>
-            </form>
-        </div>
-    </div>
-
-    <!-- SDKs do Firebase -->
-    <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-auth-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore-compat.js"></script>
-    
-    <!-- Script principal da aplicação -->
-    <script src="script.js"></script>
 </body>
 </html>

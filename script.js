@@ -18,7 +18,6 @@ const db = firebase.firestore();
 // Variáveis Globais de Estado
 let usuarioLogado = null;
 let perfilUsuario = null;
-let historicoIdEmEdicao = null;
 let modoCadastro = false;
 let chatOrcamentoIdAtual = null;
 let chatPropostaIdAtual = null;
@@ -44,6 +43,8 @@ auth.onAuthStateChanged(async user => {
     const userStatus = document.getElementById('userStatus');
     const btnOpenAuth = document.getElementById('btnOpenAuth');
     const secaoOrcamentos = document.getElementById('secaoOrcamentos');
+    const sidebarUserName = document.getElementById('sidebarUserName');
+    const sidebarUserEmail = document.getElementById('sidebarUserEmail');
 
     if (user) {
         usuarioLogado = user;
@@ -61,18 +62,23 @@ auth.onAuthStateChanged(async user => {
             if (userStatus) userStatus.innerHTML = `👤 <strong>${user.email}</strong>`;
         }
 
+        if (sidebarUserName) sidebarUserName.textContent = user.email.split('@')[0];
+        if (sidebarUserEmail) sidebarUserEmail.textContent = user.email;
+
         if (btnOpenAuth) {
             btnOpenAuth.textContent = "Sair";
             btnOpenAuth.onclick = () => auth.signOut();
         }
         
         if (secaoOrcamentos) secaoOrcamentos.style.display = 'block';
-        
         carregarOrcamentos();
     } else {
         usuarioLogado = null;
         perfilUsuario = null;
         if (userStatus) userStatus.innerHTML = "Modo Visitante";
+        if (sidebarUserName) sidebarUserName.textContent = "Visitante";
+        if (sidebarUserEmail) sidebarUserEmail.textContent = "Entre para acessar sua conta";
+        
         if (btnOpenAuth) {
             btnOpenAuth.textContent = "Entrar / Cadastrar";
             btnOpenAuth.onclick = abrirModalAuth;
@@ -241,7 +247,7 @@ function gerarChecklist() {
     const listaItens = document.getElementById('listaItens');
     const acoesChecklist = document.getElementById('acoesChecklist');
 
-    if (!selectModelo.value || !inputKm.value || inputKm.value <= 0) {
+    if (!selectMarca.value || !selectModelo.value || !inputKm.value || inputKm.value <= 0) {
         alert("Por favor, selecione a marca, modelo e insira uma quilometragem válida.");
         return;
     }
@@ -365,7 +371,7 @@ async function carregarOrcamentos() {
             const chamadoFinalizado = data.status === "Resolvido" || data.status === "Cancelado";
 
             const card = document.createElement('div');
-            card.style.cssText = `background: #0f172a; border: 1px solid var(--border); padding: 14px; border-radius: 8px; margin-bottom: 12px; ${chamadoFinalizado ? 'opacity: 0.7;' : ''}`;
+            card.className = `call-card${chamadoFinalizado ? ' is-finished' : ''}`;
 
             let acoesHtml = "";
             let propostasHtml = "";
@@ -393,8 +399,8 @@ async function carregarOrcamentos() {
                             <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 8px; flex-wrap: wrap; gap: 6px;">
                                 <span style="font-size: 0.75em; color: var(--text-dim);">Enviado em: ${prop.dataEnviado}</span>
                                 <div style="display: flex; gap: 6px;">
-                                    ${podeNegociar ? `<button type="button" onclick="abrirModalChat('${docId}', '${propId}')" style="background: #3b82f6; border: none; border-radius: 4px; color: #fff; padding: 4px 8px; font-size: 0.80em; cursor: pointer;">💬 Chat</button>` : ''}
-                                    ${(ehDonoDoChamado && !chamadoFinalizado) ? `<button type="button" onclick="finalizarChamado('${docId}', '${prop.mecanicoEmail}')" style="background: #10b981; border: none; border-radius: 4px; color: #fff; padding: 4px 8px; font-size: 0.80em; cursor: pointer;">✅ Aceitar Proposta</button>` : ''}
+                                    ${podeNegociar ? `<button type="button" onclick="window.abrirModalChat('${docId}', '${propId}')" style="background: #3b82f6; border: none; border-radius: 4px; color: #fff; padding: 4px 8px; font-size: 0.80em; cursor: pointer;">💬 Chat</button>` : ''}
+                                    ${(ehDonoDoChamado && !chamadoFinalizado) ? `<button type="button" onclick="window.finalizarChamado('${docId}', '${prop.mecanicoEmail}')" style="background: #10b981; border: none; border-radius: 4px; color: #fff; padding: 4px 8px; font-size: 0.80em; cursor: pointer;">✅ Aceitar Proposta</button>` : ''}
                                 </div>
                             </div>
                         </div>
@@ -458,21 +464,21 @@ async function carregarOrcamentos() {
     }
 }
 
-// Chat e Mensagens da Proposta
-function abrirModalChat(orcamentoId, propostaId) {
+// Globalização de Funções para Handlers Inline (HTML)
+window.abrirModalChat = function(orcamentoId, propostaId) {
     chatOrcamentoIdAtual = orcamentoId;
     chatPropostaIdAtual = propostaId;
 
     const modalChat = document.getElementById('modalChat');
     if (modalChat) modalChat.style.display = 'flex';
     ouvirMensagensChat();
-}
+};
 
-function fecharModalChat() {
+window.fecharModalChat = function() {
     const modalChat = document.getElementById('modalChat');
     if (modalChat) modalChat.style.display = 'none';
     if (unsubscribeChatListener) unsubscribeChatListener();
-}
+};
 
 function ouvirMensagensChat() {
     const chatBox = document.getElementById('chatMessages');
@@ -499,15 +505,7 @@ function ouvirMensagensChat() {
             const souEu = usuarioLogado && msg.remetenteId === usuarioLogado.uid;
 
             const balao = document.createElement('div');
-            balao.style.cssText = `
-                max-width: 80%;
-                padding: 8px 12px;
-                border-radius: 8px;
-                font-size: 0.85em;
-                align-self: ${souEu ? 'flex-end' : 'flex-start'};
-                background: ${souEu ? '#2563eb' : '#334155'};
-                color: #ffffff;
-            `;
+            balao.className = `chat-bubble ${souEu ? 'mine' : 'theirs'}`;
 
             balao.innerHTML = `
                 <div style="font-size: 0.75em; opacity: 0.8; margin-bottom: 2px;">${msg.remetenteEmail}</div>
@@ -584,7 +582,7 @@ async function cancelarOrcamento(orcamentoId) {
     }
 }
 
-async function finalizarChamado(orcamentoId, oficinaEscolhida) {
+window.finalizarChamado = async function(orcamentoId, oficinaEscolhida) {
     if (!confirm(`Deseja aceitar a proposta da oficina ${oficinaEscolhida} e marcar o chamado como Resolvido?`)) return;
 
     try {
@@ -599,13 +597,12 @@ async function finalizarChamado(orcamentoId, oficinaEscolhida) {
     } catch (error) {
         alert("Erro ao finalizar chamado: " + error.message);
     }
-}
+};
 
 // ==========================================
 // INICIALIZAÇÃO DA PÁGINA (EVENT LISTENERS)
 // ==========================================
 document.addEventListener('DOMContentLoaded', () => {
-    // 1. Inicializa FIPE
     carregarMarcasAPI();
 
     const selectMarca = document.getElementById('selectMarca');
@@ -623,12 +620,76 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // 2. Modais e Botões de Autenticação
     document.getElementById('btnOpenAuth')?.addEventListener('click', abrirModalAuth);
     document.getElementById('btnCloseAuth')?.addEventListener('click', fecharModalAuth);
     document.getElementById('linkToggleAuth')?.addEventListener('click', alternarModoAuth);
 
-    // 3. Ações do Checklist
+    const btnOpenMenu = document.getElementById('btnOpenMenu');
+    const btnCloseMenu = document.getElementById('btnCloseMenu');
+    const sidebar = document.getElementById('sidebar');
+    const sidebarOverlay = document.getElementById('sidebarOverlay');
+
+    function abrirMenuLateral() {
+        sidebar?.classList.add('open');
+        sidebarOverlay?.classList.add('open');
+        btnOpenMenu?.classList.add('active');
+        btnOpenMenu?.setAttribute('aria-expanded', 'true');
+        sidebar?.setAttribute('aria-hidden', 'false');
+        document.body.classList.add('menu-open');
+    }
+
+    function fecharMenuLateral() {
+        sidebar?.classList.remove('open');
+        sidebarOverlay?.classList.remove('open');
+        btnOpenMenu?.classList.remove('active');
+        btnOpenMenu?.setAttribute('aria-expanded', 'false');
+        sidebar?.setAttribute('aria-hidden', 'true');
+        document.body.classList.remove('menu-open');
+    }
+
+    btnOpenMenu?.addEventListener('click', abrirMenuLateral);
+    btnCloseMenu?.addEventListener('click', fecharMenuLateral);
+    sidebarOverlay?.addEventListener('click', fecharMenuLateral);
+
+    document.addEventListener('keydown', (event) => {
+        if (event.key === 'Escape') fecharMenuLateral();
+    });
+
+    document.querySelectorAll('.sidebar-item[data-target]').forEach((item) => {
+        item.addEventListener('click', () => {
+            document.querySelectorAll('.sidebar-item[data-target]').forEach(i => i.classList.remove('active'));
+            item.classList.add('active');
+            const target = document.getElementById(item.dataset.target);
+            target?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            fecharMenuLateral();
+        });
+    });
+
+    document.getElementById('btnHome')?.addEventListener('click', (event) => {
+        event.preventDefault();
+        document.getElementById('topoPagina')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        fecharMenuLateral();
+    });
+
+    document.getElementById('btnSidebarAccount')?.addEventListener('click', () => {
+        fecharMenuLateral();
+        document.getElementById('btnOpenAuth')?.click();
+    });
+
+    document.getElementById('btnSidebarHelp')?.addEventListener('click', () => {
+        fecharMenuLateral();
+        alert('O HelpCar ajuda você a acompanhar a manutenção preventiva, gerar checklists e solicitar orçamentos de oficinas.');
+    });
+
+    document.getElementById('btnSidebarLogout')?.addEventListener('click', () => {
+        fecharMenuLateral();
+        if (typeof firebase !== 'undefined' && firebase.auth && firebase.auth().currentUser) {
+            firebase.auth().signOut();
+        } else {
+            document.getElementById('btnOpenAuth')?.click();
+        }
+    });
+
     document.getElementById('btnGerarChecklist')?.addEventListener('click', gerarChecklist);
     document.getElementById('btnSolicitarOrcamento')?.addEventListener('click', solicitarOrcamentoMecanico);
 });
