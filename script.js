@@ -25,8 +25,7 @@ let unsubscribeChatListener = null;
 let tipoVeiculoAtual = "carros"; // 'carros' ou 'motos'
 
 // ==========================================
-// FALLBACK GLOBAL: garante que o conteúdo apareça
-// mesmo se algo falhar no JS/CSS
+// FALLBACK GLOBAL: garante visibilidade do conteúdo
 // ==========================================
 function garantirVisibilidadeConteudo() {
     document.querySelectorAll('.animate-on-scroll').forEach(el => {
@@ -114,6 +113,7 @@ auth.onAuthStateChanged(async user => {
     const secaoOrcamentos = document.getElementById('secaoOrcamentos');
     const sidebarUserName = document.getElementById('sidebarUserName');
     const sidebarUserEmail = document.getElementById('sidebarUserEmail');
+    const sidebarAvatar = document.getElementById('sidebarAvatar');
 
     if (user) {
         usuarioLogado = user;
@@ -133,6 +133,7 @@ auth.onAuthStateChanged(async user => {
 
         if (sidebarUserName) sidebarUserName.textContent = user.email.split('@')[0];
         if (sidebarUserEmail) sidebarUserEmail.textContent = user.email;
+        if (sidebarAvatar) sidebarAvatar.textContent = user.email.charAt(0).toUpperCase();
 
         if (btnOpenAuth) {
             btnOpenAuth.textContent = "Sair";
@@ -147,6 +148,7 @@ auth.onAuthStateChanged(async user => {
         if (userStatus) userStatus.innerHTML = "Modo Visitante";
         if (sidebarUserName) sidebarUserName.textContent = "Visitante";
         if (sidebarUserEmail) sidebarUserEmail.textContent = "Entre para acessar sua conta";
+        if (sidebarAvatar) sidebarAvatar.textContent = "V";
         
         if (btnOpenAuth) {
             btnOpenAuth.textContent = "Entrar / Cadastrar";
@@ -688,18 +690,96 @@ window.finalizarChamado = async function(orcamentoId, oficinaEscolhida) {
 };
 
 // ==========================================
-// 8. INICIALIZAÇÃO DA PÁGINA (EVENT LISTENERS)
+// 8. IMPRESSÃO DE RELATÓRIO (PDF)
+// ==========================================
+function imprimirRelatorio() {
+    const selectTipoVeiculo = document.getElementById('selectTipoVeiculo');
+    const selectMarca = document.getElementById('selectMarca');
+    const selectModelo = document.getElementById('selectModelo');
+    const inputKm = document.getElementById('inputKm');
+
+    // Validações
+    if (!selectMarca.value || !selectModelo.value || !inputKm.value || inputKm.value <= 0) {
+        alert("Gere o checklist antes de imprimir o relatório.");
+        return;
+    }
+
+    const checkboxes = document.querySelectorAll('#listaItens input[type="checkbox"]');
+    if (checkboxes.length === 0) {
+        alert("Nenhum item de manutenção para imprimir. Gere o checklist primeiro.");
+        return;
+    }
+
+    // ===== Dados do veículo =====
+    const marcaNome = selectMarca.options[selectMarca.selectedIndex]?.text || '';
+    const modeloNome = selectModelo.value;
+    const kmAtual = Math.abs(parseInt(inputKm.value)) || 0;
+    const tipoNome = tipoVeiculoAtual === 'motos' ? 'Motocicleta' : 'Automóvel';
+
+    // ===== Data de emissão =====
+    const agora = new Date();
+    const dataFormatada = agora.toLocaleDateString('pt-BR', {
+        day: '2-digit',
+        month: 'long',
+        year: 'numeric'
+    }) + ' às ' + agora.toLocaleTimeString('pt-BR', {
+        hour: '2-digit',
+        minute: '2-digit'
+    });
+
+    // ===== Preenche o cabeçalho =====
+    document.getElementById('relatorioTipo').textContent = tipoNome;
+    document.getElementById('relatorioMarca').textContent = marcaNome;
+    document.getElementById('relatorioModelo').textContent = modeloNome;
+    document.getElementById('relatorioKm').textContent = kmAtual.toLocaleString('pt-BR') + ' km';
+    document.getElementById('relatorioDataEmissao').textContent = 'Emitido em ' + dataFormatada;
+
+    // ===== Preenche a tabela =====
+    const tbody = document.getElementById('relatorioTbody');
+    tbody.innerHTML = '';
+
+    checkboxes.forEach(cb => {
+        const titulo = cb.getAttribute('data-title');
+        const taskItem = cb.closest('.task-item');
+        const descEl = taskItem?.querySelector('.task-desc');
+        const tagEl = taskItem?.querySelector('.task-tag');
+        const proximaEl = taskItem?.querySelector('.proxima-revisao-tag strong');
+
+        const descricao = descEl?.textContent || '';
+        const tagTexto = tagEl?.textContent || '';
+        const categoria = tagTexto.split('•')[0]?.trim() || '—';
+        const proximaKm = proximaEl?.textContent || '—';
+        const concluido = cb.checked;
+
+        const tr = document.createElement('tr');
+        tr.className = concluido ? 'concluido' : '';
+        tr.innerHTML = `
+            <td style="text-align:center; font-size: 1.1em;">${concluido ? '☑' : '☐'}</td>
+            <td><strong>${titulo}</strong></td>
+            <td>${descricao}</td>
+            <td>${categoria}</td>
+            <td>${proximaKm}</td>
+        `;
+        tbody.appendChild(tr);
+    });
+
+    // ===== Dispara a impressão =====
+    setTimeout(() => {
+        window.print();
+    }, 150);
+}
+
+// ==========================================
+// 9. INICIALIZAÇÃO DA PÁGINA (EVENT LISTENERS)
 // ==========================================
 document.addEventListener('DOMContentLoaded', () => {
-    // ✅ FALLBACK CRÍTICO: força visibilidade imediata
+    // Fallback crítico
     garantirVisibilidadeConteudo();
-
-    // ✅ Segundo fallback com timeout (caso observer/CSS demore)
     setTimeout(garantirVisibilidadeConteudo, 500);
 
     carregarMarcasAPI("carros");
 
-    // Scroll Observer init
+    // Scroll Observer
     const hiddenElements = document.querySelectorAll('.animate-on-scroll');
     hiddenElements.forEach(el => {
         try {
@@ -806,4 +886,5 @@ document.addEventListener('DOMContentLoaded', () => {
 
     document.getElementById('btnGerarChecklist')?.addEventListener('click', gerarChecklist);
     document.getElementById('btnSolicitarOrcamento')?.addEventListener('click', solicitarOrcamentoMecanico);
+    document.getElementById('btnImprimirRelatorio')?.addEventListener('click', imprimirRelatorio);
 });

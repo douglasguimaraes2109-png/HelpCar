@@ -87,7 +87,48 @@ body.menu-open { overflow: hidden; }
 }
 
 /* ==========================================
-   2. NAVBAR
+   2. LOGO
+   ========================================== */
+.logo {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.65rem;
+    text-decoration: none;
+    cursor: pointer;
+    transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.logo:hover { transform: translateY(-1px); }
+
+.logo-icon {
+    display: block;
+    flex-shrink: 0;
+    filter: drop-shadow(0 4px 12px rgba(59, 130, 246, 0.35));
+    transition: filter 0.25s ease;
+}
+
+.logo:hover .logo-icon {
+    filter: drop-shadow(0 6px 18px rgba(59, 130, 246, 0.55));
+}
+
+.logo-text {
+    font-family: 'Sora', sans-serif;
+    font-size: 1.35rem;
+    font-weight: 800;
+    color: var(--text-primary);
+    letter-spacing: -0.03em;
+    line-height: 1;
+}
+
+.logo-accent {
+    background: var(--grad-blue);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+/* ==========================================
+   3. NAVBAR
    ========================================== */
 .navbar {
     background: rgba(6, 9, 18, 0.7);
@@ -122,44 +163,6 @@ body.menu-open { overflow: hidden; }
     gap: 1rem;
 }
 
-/* Logo */
-.logo {
-    display: flex;
-    align-items: center;
-    gap: 0.65rem;
-    text-decoration: none;
-    color: var(--text-primary);
-    font-family: 'Sora', sans-serif;
-    font-weight: 700;
-    font-size: 1.15rem;
-    letter-spacing: -0.02em;
-}
-
-.logo-mark {
-    width: 32px;
-    height: 32px;
-    background: var(--grad-blue);
-    border-radius: 9px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-family: 'Sora', sans-serif;
-    font-weight: 800;
-    font-size: 1rem;
-    color: #fff;
-    box-shadow: 0 4px 12px -4px rgba(59, 130, 246, 0.6);
-}
-
-.logo-mark.lg {
-    width: 48px;
-    height: 48px;
-    border-radius: 14px;
-    font-size: 1.4rem;
-}
-
-.logo-text { color: var(--text-primary); }
-
-/* Botão menu */
 .btn-menu {
     background: rgba(255, 255, 255, 0.04);
     border: 1px solid var(--card-border);
@@ -182,7 +185,6 @@ body.menu-open { overflow: hidden; }
     transform: translateY(-1px);
 }
 
-/* User status pill */
 .user-status {
     font-size: 0.82rem;
     color: var(--text-secondary);
@@ -201,7 +203,7 @@ body.menu-open { overflow: hidden; }
 .user-status strong { color: var(--text-primary); font-weight: 600; }
 
 /* ==========================================
-   3. SIDEBAR
+   4. SIDEBAR
    ========================================== */
 .sidebar-overlay {
     position: fixed;
@@ -338,15 +340,24 @@ body.menu-open { overflow: hidden; }
     font-weight: 500;
     cursor: pointer;
     transition: all 0.22s cubic-bezier(0.16, 1, 0.3, 1);
-    display: flex;
+    display: grid;
+    grid-template-columns: 20px 1fr auto;
     align-items: center;
     gap: 0.75rem;
+    min-height: 44px;
     position: relative;
     overflow: hidden;
     font-family: 'Inter', sans-serif;
+    text-decoration: none;
 }
 
-.sidebar-item svg { flex-shrink: 0; opacity: 0.85; }
+.sidebar-item svg {
+    width: 18px;
+    height: 18px;
+    flex-shrink: 0;
+    display: block;
+    opacity: 0.9;
+}
 
 .sidebar-item:hover {
     background: rgba(255, 255, 255, 0.04);
@@ -377,8 +388,40 @@ body.menu-open { overflow: hidden; }
     color: #fca5a5;
 }
 
+/* Item especial do Patreon */
+.sidebar-item.patreon {
+    background: linear-gradient(90deg, rgba(249, 104, 84, 0.12) 0%, rgba(249, 104, 84, 0.03) 100%);
+    border: 1px solid rgba(249, 104, 84, 0.25);
+    color: #ff8a65;
+    margin-top: 0.5rem;
+}
+
+.sidebar-item.patreon:hover {
+    background: linear-gradient(90deg, rgba(249, 104, 84, 0.2) 0%, rgba(249, 104, 84, 0.06) 100%);
+    border-color: rgba(249, 104, 84, 0.5);
+    color: #ffab91;
+}
+
+.sidebar-item.patreon svg {
+    color: #f96854;
+    filter: drop-shadow(0 0 6px rgba(249, 104, 84, 0.5));
+}
+
+.sidebar-item-badge {
+    justify-self: end;
+    font-size: 0.65rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    padding: 3px 8px;
+    background: rgba(249, 104, 84, 0.25);
+    color: #ffab91;
+    border-radius: 999px;
+    border: 1px solid rgba(249, 104, 84, 0.4);
+}
+
 /* ==========================================
-   4. HERO
+   5. HERO
    ========================================== */
 .hero {
     position: relative;
@@ -497,7 +540,7 @@ body.menu-open { overflow: hidden; }
 }
 
 /* ==========================================
-   5. MAIN E SEÇÕES
+   6. MAIN E SEÇÕES
    ========================================== */
 .main-container {
     flex: 1;
@@ -584,7 +627,7 @@ body.menu-open { overflow: hidden; }
 }
 
 /* ==========================================
-   6. FORMULÁRIO
+   7. FORMULÁRIO
    ========================================== */
 .form-group-grid {
     display: grid;
@@ -652,7 +695,7 @@ body.menu-open { overflow: hidden; }
 }
 
 /* ==========================================
-   7. BOTÕES
+   8. BOTÕES
    ========================================== */
 button {
     font-family: 'Inter', sans-serif;
@@ -711,11 +754,26 @@ button:active { transform: translateY(0); }
 
 .btn-warning:hover { box-shadow: 0 12px 32px -8px rgba(245, 158, 11, 0.55); }
 
+.btn-secondary {
+    background: rgba(255, 255, 255, 0.04);
+    color: var(--text-primary);
+    border: 1px solid var(--card-border);
+    font-weight: 600;
+}
+
+.btn-secondary:hover {
+    background: rgba(255, 255, 255, 0.08);
+    border-color: rgba(148, 163, 184, 0.35);
+    box-shadow: 0 8px 24px -8px rgba(0, 0, 0, 0.4);
+}
+
+.btn-secondary svg { opacity: 0.85; }
+
 .btn-sm { padding: 0.6rem 1.1rem; font-size: 0.85rem; }
 .btn-block { width: 100%; }
 
 /* ==========================================
-   8. LISTA DE TAREFAS (CHECKLIST)
+   9. LISTA DE TAREFAS
    ========================================== */
 .lista-itens {
     margin-top: 1.75rem;
@@ -830,8 +888,14 @@ button:active { transform: translateY(0); }
     margin-bottom: 1.25rem;
 }
 
+.acoes-buttons {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.85rem;
+}
+
 /* ==========================================
-   9. MURAL DE CHAMADOS
+   10. MURAL DE CHAMADOS
    ========================================== */
 .lista-orcamentos {
     display: flex;
@@ -869,7 +933,7 @@ button:active { transform: translateY(0); }
 }
 
 /* ==========================================
-   10. FOOTER
+   11. FOOTER
    ========================================== */
 .site-footer {
     border-top: 1px solid var(--card-border);
@@ -893,6 +957,34 @@ button:active { transform: translateY(0); }
     color: var(--text-muted);
 }
 
+.footer-links {
+    display: flex;
+    gap: 1.5rem;
+    flex-wrap: wrap;
+    justify-content: center;
+    margin-top: 0.5rem;
+}
+
+.footer-links a {
+    color: var(--text-secondary);
+    font-size: 0.82rem;
+    text-decoration: none;
+    transition: all 0.2s ease;
+    padding: 0.4rem 0.85rem;
+    border-radius: var(--radius-xs);
+    border: 1px solid transparent;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+}
+
+.footer-links a:hover {
+    color: var(--accent-blue-bright);
+    background: rgba(59, 130, 246, 0.08);
+    border-color: rgba(59, 130, 246, 0.25);
+    transform: translateY(-1px);
+}
+
 .footer-copy {
     font-size: 0.75rem;
     color: var(--text-muted);
@@ -900,7 +992,7 @@ button:active { transform: translateY(0); }
 }
 
 /* ==========================================
-   11. MODAIS
+   12. MODAIS
    ========================================== */
 .modal-overlay {
     position: fixed;
@@ -999,7 +1091,6 @@ button:active { transform: translateY(0); }
     text-underline-offset: 3px;
 }
 
-/* Radio group */
 .radio-group {
     display: grid;
     grid-template-columns: 1fr 1fr;
@@ -1054,7 +1145,7 @@ button:active { transform: translateY(0); }
 #btnSubmitAuth { margin-top: 0.5rem; padding: 0.95rem 1.5rem; font-size: 0.95rem; }
 
 /* ==========================================
-   12. MODAL CHAT
+   13. MODAL CHAT
    ========================================== */
 .modal-chat {
     max-width: 600px;
@@ -1173,7 +1264,7 @@ button:active { transform: translateY(0); }
 }
 
 /* ==========================================
-   13. ANIMAÇÕES DE SCROLL
+   14. ANIMAÇÕES DE SCROLL
    ========================================== */
 .animate-on-scroll {
     opacity: 0;
@@ -1188,7 +1279,167 @@ button:active { transform: translateY(0); }
 }
 
 /* ==========================================
-   14. RESPONSIVIDADE
+   15. TEMPLATE DE IMPRESSÃO (oculto na tela)
+   ========================================== */
+.relatorio-impressao {
+    display: none;
+}
+
+/* ==========================================
+   16. ESTILOS DE IMPRESSÃO (@media print)
+   ========================================== */
+@media print {
+    body * { visibility: hidden; }
+
+    #relatorioImpressao,
+    #relatorioImpressao * { visibility: visible; }
+
+    #relatorioImpressao {
+        display: block;
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 100%;
+        padding: 2cm 1.5cm;
+        background: #fff !important;
+        color: #111 !important;
+        font-family: 'Inter', Arial, sans-serif;
+        font-size: 11pt;
+        line-height: 1.5;
+    }
+
+    @page {
+        size: A4;
+        margin: 1.2cm;
+    }
+
+    .relatorio-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        padding-bottom: 1rem;
+        border-bottom: 2px solid #3B82F6;
+        margin-bottom: 1.5rem;
+    }
+
+    .relatorio-logo {
+        display: flex;
+        align-items: center;
+        gap: 0.85rem;
+    }
+
+    .relatorio-logo h1 {
+        font-size: 1.6rem;
+        font-weight: 800;
+        color: #111;
+        margin: 0;
+        letter-spacing: -0.5px;
+    }
+
+    .relatorio-logo h1 span { color: #3B82F6; }
+
+    .relatorio-logo p {
+        font-size: 0.85rem;
+        color: #555;
+        margin-top: 0.15rem;
+    }
+
+    .relatorio-data {
+        font-size: 0.8rem;
+        color: #666;
+        text-align: right;
+    }
+
+    .relatorio-veiculo,
+    .relatorio-itens {
+        margin-bottom: 1.5rem;
+    }
+
+    .relatorio-veiculo h2,
+    .relatorio-itens h2 {
+        font-size: 1rem;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        color: #3B82F6;
+        margin-bottom: 0.75rem;
+        padding-bottom: 0.35rem;
+        border-bottom: 1px solid #ddd;
+    }
+
+    .relatorio-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 0.5rem 1.5rem;
+        font-size: 0.95rem;
+    }
+
+    .relatorio-grid strong {
+        color: #333;
+        font-weight: 600;
+    }
+
+    .relatorio-tabela {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 0.85rem;
+    }
+
+    .relatorio-tabela thead { background: #f1f5f9; }
+
+    .relatorio-tabela th {
+        text-align: left;
+        padding: 0.55rem 0.65rem;
+        font-weight: 700;
+        color: #111;
+        border-bottom: 1.5px solid #3B82F6;
+        font-size: 0.78rem;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+    }
+
+    .relatorio-tabela td {
+        padding: 0.55rem 0.65rem;
+        border-bottom: 1px solid #e2e8f0;
+        color: #222;
+        vertical-align: top;
+    }
+
+    .relatorio-tabela tr.concluido { background: #f0fdf4; }
+    .relatorio-tabela tr.concluido td { color: #166534; }
+
+    .relatorio-assinatura {
+        margin-top: 3rem;
+        text-align: center;
+    }
+
+    .assinatura-linha {
+        width: 60%;
+        margin: 0 auto 0.5rem;
+        border-top: 1px solid #333;
+    }
+
+    .relatorio-assinatura p {
+        font-size: 0.8rem;
+        color: #555;
+    }
+
+    .relatorio-footer {
+        margin-top: 2rem;
+        padding-top: 1rem;
+        border-top: 1px solid #ddd;
+        text-align: center;
+        font-size: 0.72rem;
+        color: #777;
+    }
+
+    .relatorio-footer strong { color: #3B82F6; }
+
+    .relatorio-tabela tr { page-break-inside: avoid; }
+    .relatorio-header { page-break-after: avoid; }
+}
+
+/* ==========================================
+   17. RESPONSIVIDADE
    ========================================== */
 @media (max-width: 900px) {
     .form-group-grid { grid-template-columns: 1fr 1fr; }
@@ -1233,101 +1484,6 @@ button:active { transform: translateY(0); }
     .sidebar { width: 88vw; }
 
     .radio-group { grid-template-columns: 1fr; }
-}
 
-/* ==========================================
-   15. LINK DO PATREON / NOVIDADES
-   ========================================== */
-
-/* Item especial da sidebar */
-.sidebar-item.patreon {
-    background: linear-gradient(90deg, rgba(249, 104, 84, 0.12) 0%, rgba(249, 104, 84, 0.03) 100%);
-    border: 1px solid rgba(249, 104, 84, 0.25);
-    color: #ff8a65;
-    text-decoration: none;
-    margin-top: 0.5rem;
-    position: relative;
-}
-
-.sidebar-item.patreon:hover {
-    background: linear-gradient(90deg, rgba(249, 104, 84, 0.2) 0%, rgba(249, 104, 84, 0.06) 100%);
-    border-color: rgba(249, 104, 84, 0.5);
-    color: #ffab91;
-}
-
-.sidebar-item.patreon svg {
-    color: #f96854;
-    filter: drop-shadow(0 0 6px rgba(249, 104, 84, 0.5));
-}
-
-/* Badge "Novo" */
-.sidebar-item-badge {
-    margin-left: auto;
-    font-size: 0.65rem;
-    font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: 0.08em;
-    padding: 3px 8px;
-    background: rgba(249, 104, 84, 0.25);
-    color: #ffab91;
-    border-radius: 999px;
-    border: 1px solid rgba(249, 104, 84, 0.4);
-}
-
-/* Links do footer */
-.footer-links {
-    display: flex;
-    gap: 1.5rem;
-    flex-wrap: wrap;
-    justify-content: center;
-    margin-top: 0.5rem;
-}
-
-.footer-links a {
-    color: var(--text-secondary);
-    font-size: 0.82rem;
-    text-decoration: none;
-    transition: all 0.2s ease;
-    padding: 0.4rem 0.85rem;
-    border-radius: var(--radius-xs);
-    border: 1px solid transparent;
-    display: inline-flex;
-    align-items: center;
-    gap: 0.4rem;
-}
-
-.footer-links a:hover {
-    color: var(--accent-blue-bright);
-    background: rgba(59, 130, 246, 0.08);
-    border-color: rgba(59, 130, 246, 0.25);
-    transform: translateY(-1px);
-}
-
-/* ==========================================
-   ALINHAMENTO UNIFORME DOS ITENS DA SIDEBAR
-   ========================================== */
-
-/* Todos os itens da sidebar seguem o mesmo grid */
-.sidebar-item,
-.sidebar-item.patreon {
-    display: grid;
-    grid-template-columns: 20px 1fr auto;
-    align-items: center;
-    gap: 0.75rem;
-    min-height: 44px;
-    padding: 0.75rem 0.9rem;
-}
-
-/* Todos os SVGs com tamanho fixo pra alinharem verticalmente */
-.sidebar-item svg,
-.sidebar-item.patreon svg {
-    width: 18px;
-    height: 18px;
-    flex-shrink: 0;
-    display: block;
-}
-
-/* Badge "Novo" alinhado à direita */
-.sidebar-item-badge {
-    justify-self: end;
+    .acoes-buttons { grid-template-columns: 1fr; }
 }
