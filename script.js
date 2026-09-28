@@ -1,5 +1,5 @@
 // ==========================================
-// CONFIGURAÇÃO DO FIREBASE
+// 1. CONFIGURAÇÃO DO FIREBASE
 // ==========================================
 const firebaseConfig = {
   apiKey: "AIzaSyAr2WewAfeddazQLBpV-JId3Tmq9Tx8s_M",
@@ -22,22 +22,91 @@ let modoCadastro = false;
 let chatOrcamentoIdAtual = null;
 let chatPropostaIdAtual = null;
 let unsubscribeChatListener = null;
+let tipoVeiculoAtual = "carros"; // 'carros' ou 'motos'
 
-const FIPE_API_URL = "https://parallelum.com.br/fipe/api/v1/carros";
+// ==========================================
+// FALLBACK GLOBAL: garante que o conteúdo apareça
+// mesmo se algo falhar no JS/CSS
+// ==========================================
+function garantirVisibilidadeConteudo() {
+    document.querySelectorAll('.animate-on-scroll').forEach(el => {
+        el.classList.add('visible');
+        el.style.opacity = '1';
+        el.style.transform = 'translateY(0)';
+    });
+    const secaoChecklist = document.getElementById('secaoChecklist');
+    if (secaoChecklist) secaoChecklist.style.display = 'block';
+}
 
-const manutencaoPadrao = [
-    { kmIntervalo: 10000, item: "Troca de Óleo do Motor + Filtro", desc: "Verificar especificação e viscosidade recomendada no manual.", cat: "Básico" },
-    { kmIntervalo: 10000, item: "Filtro de Ar do Motor e Combustível", desc: "Substituição para evitar consumo excessivo de combustível.", cat: "Injeção" },
-    { kmIntervalo: 20000, item: "Velas de Ignição", desc: "Checar desgaste dos eletrodos para garantir boa queima.", cat: "Ignição" },
-    { kmIntervalo: 20000, item: "Pastilhas de Freio e Fluido DOT4", desc: "Inspecionar espessura das pastilhas e contaminação do fluido.", cat: "Freios" },
-    { kmIntervalo: 30000, item: "Limpeza do Sistema de Arrefecimento", desc: "Troca do líquido com aditivo na proporção correta.", cat: "Arrefecimento" },
-    { kmIntervalo: 40000, item: "Correia Dentada e Tensor (se aplicável)", desc: "Verificação preventiva essencial para evitar quebra do motor.", cat: "Motor" },
-    { kmIntervalo: 50000, item: "Amortecedores e Kit Suspensão", desc: "Avaliar vazamentos, folgas em buchas, pivôs e bieletas.", cat: "Suspensão" },
-    { kmIntervalo: 80000, item: "Kit de Embreagem / Fluido do Câmbio", desc: "Checar altura do pedal ou troca de fluido da transmissão.", cat: "Transmissão" }
+// ==========================================
+// Tabela de Manutenção para Carros
+// ==========================================
+const manutencaoCarros = [
+    { kmIntervalo: 10000, item: "Troca de Óleo do Motor e Filtro de Óleo", desc: "Substituição do lubrificante conforme especificação (sintético/semissintético) e filtro.", cat: "Motor" },
+    { kmIntervalo: 10000, item: "Filtro de Ar do Motor e Filtro de Combustível", desc: "Substituição para garantir a mistura ideal de ar/combustível e proteger os injetores.", cat: "Injeção" },
+    { kmIntervalo: 10000, item: "Filtro do Ar-Condicionado (Cabine)", desc: "Troca do filtro de cabine e higienização do sistema de ar-condicionado.", cat: "Conforto" },
+    { kmIntervalo: 10000, item: "Inspeção Visual de Suspensão e Pneus", desc: "Verificar folgas em pivôs, buchas, bieletas, além de realizar alinhamento e balanceamento.", cat: "Suspensão" },
+    { kmIntervalo: 10000, item: "Checagem do Sistema de Freios", desc: "Inspecionar espessura das pastilhas e discos dianteiros, e vazamentos no sistema.", cat: "Freios" },
+    { kmIntervalo: 20000, item: "Velas de Ignição", desc: "Inspeção ou substituição das velas para evitar falhas de ignição e consumo alto.", cat: "Ignição" },
+    { kmIntervalo: 20000, item: "Troca do Fluido de Freio (DOT 4 / DOT 5.1)", desc: "Substituição completa do fluido para eliminar humidade e manter a eficiência de travagem.", cat: "Freios" },
+    { kmIntervalo: 20000, item: "Revisão do Freio Traseiro", desc: "Limpeza e regulagem de tambores/sapatas ou verificação de pastilhas traseiras.", cat: "Freios" },
+    { kmIntervalo: 20000, item: "Palhetas do Limpador de Para-brisa", desc: "Substituição das palhetas dianteiras e traseiras devido ao desgaste da borracha.", cat: "Acessórios" },
+    { kmIntervalo: 30000, item: "Limpeza do Sistema de Arrefecimento", desc: "Esgotamento, limpeza do radiador e adição de aditivo orgânico/desmineralizado.", cat: "Arrefecimento" },
+    { kmIntervalo: 30000, item: "Limpeza dos Bicos Injetores e TBI", desc: "Descarbonização do corpo de borboleta (TBI) e teste de vazão dos injetores.", cat: "Injeção" },
+    { kmIntervalo: 30000, item: "Correia de Acessórios (Poly-V)", desc: "Verificação de trincas e desgaste na correia do alternador e ar-condicionado.", cat: "Motor" },
+    { kmIntervalo: 40000, item: "Troca da Correia Dentada e Tensor", desc: "Substituição preventiva da correia e esticador (em motores com correia banhada a óleo/seca).", cat: "Motor" },
+    { kmIntervalo: 40000, item: "Cabos de Ignição", desc: "Substituição dos cabos de vela para evitar fuga de corrente elétrica.", cat: "Ignição" },
+    { kmIntervalo: 40000, item: "Carga da Bateria e Teste do Alternador", desc: "Avaliar a saúde da bateria e capacidade de carga do alternador.", cat: "Elétrica" },
+    { kmIntervalo: 50000, item: "Amortecedores, Batentes e Coifas", desc: "Substituição do conjunto de amortecedores dianteiros/traseiros e kits de proteção.", cat: "Suspensão" },
+    { kmIntervalo: 50000, item: "Buchas da Bandeja, Pivôs e Terminal de Direção", desc: "Troca dos componentes de borracha e articulações da suspensão com folga.", cat: "Suspensão" },
+    { kmIntervalo: 50000, item: "Troca do Fluido da Direção Hidráulica", desc: "Substituição do fluido hidráulico da caixa de direção (se aplicável).", cat: "Direção" },
+    { kmIntervalo: 80000, item: "Kit de Embreagem ou Fluido do Câmbio Automático", desc: "Troca do disco/platô/atuador (manual) ou substituição do fluido ATF (automático).", cat: "Transmissão" },
+    { kmIntervalo: 80000, item: "Bomba d'Água e Válvula Termostática", desc: "Substituição preventiva junta com a revisão profunda de arrefecimento.", cat: "Arrefecimento" }
+];
+
+// Tabela de Manutenção para Motos
+const manutencaoMotos = [
+    { kmIntervalo: 3000, item: "Troca de Óleo do Motor", desc: "Troca periódica recomendada para alta rotação do motor de moto.", cat: "Motor" },
+    { kmIntervalo: 6000, item: "Ajuste e Lubrificação da Corrente / Kit Relação", desc: "Verificar folga da corrente, desgaste da coroa e do pinhão.", cat: "Transmissão" },
+    { kmIntervalo: 6000, item: "Filtro de Ar e Vela de Ignição", desc: "Limpeza/troca do filtro e inspeção da folga do eletrodo da vela.", cat: "Injeção / Ignição" },
+    { kmIntervalo: 6000, item: "Inspeção Visual da Suspensão e Retentores", desc: "Verificar se há vazamento de óleo nos retentores dos garfos dianteiros (bengalas).", cat: "Suspensão" },
+    { kmIntervalo: 10000, item: "Pastilhas / Sapatas de Freio e Fluido", desc: "Inspecionar desgaste do sistema de travagem e nível do fluido.", cat: "Freios" },
+    { kmIntervalo: 10000, item: "Verificação da Caixa de Direção", desc: "Checar folgas, 'calos' na condução ou necessidade de rebarbar/lubrificar os rolamentos da caixa de direção.", cat: "Suspensão" },
+    { kmIntervalo: 12000, item: "Regulagem de Válvulas", desc: "Verificar e ajustar a folga das válvulas do motor.", cat: "Motor" },
+    { kmIntervalo: 12000, item: "Lubrificação do Eixo da Balança / Buchas da Suspensão Traseira", desc: "Desmontar e lubrificar o eixo do balancim e links do amortecedor traseiro.", cat: "Suspensão" },
+    { kmIntervalo: 15000, item: "Troca do Óleo da Suspensão Dianteira (Bengala) e Retentores", desc: "Substituição completa do fluido hidráulico e reparo dos garfos dianteiros para manter a absorção de impacto.", cat: "Suspensão" },
+    { kmIntervalo: 20000, item: "Troca do Kit Relação Completo", desc: "Substituição da corrente, pinhão e coroa por desgaste natural.", cat: "Transmissão" },
+    { kmIntervalo: 20000, item: "Avaliação / Troca do Amortecedor Traseiro", desc: "Verificar se o amortecedor central/traseiro perdeu a ação de retorno ou apresenta vazamentos.", cat: "Suspensão" }
 ];
 
 // ==========================================
-// OBSERVADOR DE AUTENTICAÇÃO EM TEMPO REAL
+// 2. SCROLL OBSERVER & NAV EFFECT
+// ==========================================
+const observerOptions = {
+    root: null,
+    rootMargin: '0px',
+    threshold: 0.15
+};
+
+const scrollObserver = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+        if (entry.isIntersecting) {
+            entry.target.classList.add('visible');
+        }
+    });
+}, observerOptions);
+
+window.addEventListener('scroll', () => {
+    const navbar = document.querySelector('.navbar');
+    if (window.scrollY > 50) {
+        navbar?.classList.add('navbar-scrolled');
+    } else {
+        navbar?.classList.remove('navbar-scrolled');
+    }
+});
+
+// ==========================================
+// 3. OBSERVADOR DE AUTENTICAÇÃO
 // ==========================================
 auth.onAuthStateChanged(async user => {
     const userStatus = document.getElementById('userStatus');
@@ -88,7 +157,7 @@ auth.onAuthStateChanged(async user => {
 });
 
 // ==========================================
-// CONTROLE DO MODAL DE AUTENTICAÇÃO
+// 4. CONTROLE DO MODAL DE AUTENTICAÇÃO
 // ==========================================
 function abrirModalAuth() {
     modoCadastro = false;
@@ -180,9 +249,9 @@ function tratarErrosFirebase(error) {
 }
 
 // ==========================================
-// API DA FIPE E BUSCA DE VEÍCULOS
+// 5. API DA FIPE E BUSCA DE VEÍCULOS
 // ==========================================
-async function carregarMarcasAPI() {
+async function carregarMarcasAPI(tipo = "carros") {
     const selectMarca = document.getElementById('selectMarca');
     const selectModelo = document.getElementById('selectModelo');
 
@@ -190,12 +259,14 @@ async function carregarMarcasAPI() {
 
     selectMarca.innerHTML = '<option value="">Carregando marcas...</option>';
     selectMarca.disabled = true;
+    selectModelo.innerHTML = '<option value="">Selecione a marca primeiro</option>';
+    selectModelo.disabled = true;
 
     try {
-        const response = await fetch(`${FIPE_API_URL}/marcas`);
+        const response = await fetch(`https://parallelum.com.br/fipe/api/v1/${tipo}/marcas`);
         const marcas = await response.json();
 
-        selectMarca.innerHTML = '<option value="">-- Escolha a Marca --</option>';
+        selectMarca.innerHTML = `<option value="">-- Escolha a Marca (${tipo === 'motos' ? 'Moto' : 'Carro'}) --</option>`;
         marcas.forEach(marca => {
             const option = document.createElement('option');
             option.value = marca.codigo;
@@ -219,7 +290,7 @@ async function carregarModelosAPI(codigoMarca) {
     selectModelo.disabled = true;
 
     try {
-        const response = await fetch(`${FIPE_API_URL}/marcas/${codigoMarca}/modelos`);
+        const response = await fetch(`https://parallelum.com.br/fipe/api/v1/${tipoVeiculoAtual}/marcas/${codigoMarca}/modelos`);
         const data = await response.json();
 
         selectModelo.innerHTML = '<option value="">-- Escolha o Modelo --</option>';
@@ -238,7 +309,7 @@ async function carregarModelosAPI(codigoMarca) {
 }
 
 // ==========================================
-// CHECKLIST DE MANUTENÇÃO
+// 6. CHECKLIST DE MANUTENÇÃO
 // ==========================================
 function gerarChecklist() {
     const selectMarca = document.getElementById('selectMarca');
@@ -255,7 +326,9 @@ function gerarChecklist() {
     const kmAtual = Math.abs(parseInt(inputKm.value)) || 0;
     listaItens.innerHTML = "";
 
-    const pendencias = manutencaoPadrao.filter(item => {
+    const tabelaManutencao = tipoVeiculoAtual === 'motos' ? manutencaoMotos : manutencaoCarros;
+
+    const pendencias = tabelaManutencao.filter(item => {
         return (kmAtual % item.kmIntervalo === 0) || (kmAtual >= item.kmIntervalo);
     });
 
@@ -294,7 +367,7 @@ function gerarChecklist() {
 }
 
 // ==========================================
-// MURAL DE CHAMADOS / ORÇAMENTOS & CHAT
+// 7. MURAL DE CHAMADOS / ORÇAMENTOS & CHAT
 // ==========================================
 async function solicitarOrcamentoMecanico() {
     if (!usuarioLogado) {
@@ -318,12 +391,13 @@ async function solicitarOrcamentoMecanico() {
     const modeloNome = selectModelo.value;
     const kmAtual = Math.abs(parseInt(inputKm.value)) || 0;
     const observacao = prompt("Alguma observação para os mecânicos/oficinas?");
+    const iconeTipo = tipoVeiculoAtual === 'motos' ? '🏍️' : '🚗';
 
     try {
         await db.collection("orcamentos").add({
             clienteId: usuarioLogado.uid,
             clienteEmail: usuarioLogado.email,
-            veiculo: `${marcaNome} - ${modeloNome}`,
+            veiculo: `${iconeTipo} ${marcaNome} - ${modeloNome}`,
             odometro: kmAtual,
             itens: itensPendentes,
             observacao: observacao || "Sem observações",
@@ -379,7 +453,7 @@ async function carregarOrcamentos() {
             const propostasSnapshot = await db.collection("orcamentos").doc(docId).collection("propostas").get();
 
             if (!propostasSnapshot.empty) {
-                propostasHtml = `<div style="margin-top: 12px; padding-top: 10px; border-top: 1px dashed var(--border);">
+                propostasHtml = `<div style="margin-top: 12px; padding-top: 10px; border-top: 1px dashed var(--card-border);">
                     <strong style="color: #10b981; font-size: 0.85em;">📩 Propostas / Negociações:</strong>`;
                 
                 propostasSnapshot.forEach(pDoc => {
@@ -390,14 +464,14 @@ async function carregarOrcamentos() {
                     const ehDonoDoChamado = usuarioLogado && (data.clienteId === usuarioLogado.uid);
 
                     propostasHtml += `
-                        <div style="background: #1e293b; padding: 10px; border-radius: 6px; margin-top: 8px; font-size: 0.85em;">
+                        <div style="background: rgba(11, 15, 25, 0.6); padding: 10px; border-radius: 6px; margin-top: 8px; font-size: 0.85em;">
                             <div style="display: flex; justify-content: space-between; font-weight: bold; color: #f8fafc;">
                                 <span>🔧 ${prop.mecanicoEmail}</span>
                                 <span style="color: #10b981;">R$ ${Number(prop.valor).toLocaleString('pt-BR', {minimumFractionDigits: 2})}</span>
                             </div>
-                            <div style="color: var(--text-dim); margin-top: 4px;">"${prop.mensagem}"</div>
+                            <div style="color: var(--text-secondary); margin-top: 4px;">"${prop.mensagem}"</div>
                             <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 8px; flex-wrap: wrap; gap: 6px;">
-                                <span style="font-size: 0.75em; color: var(--text-dim);">Enviado em: ${prop.dataEnviado}</span>
+                                <span style="font-size: 0.75em; color: var(--text-secondary);">Enviado em: ${prop.dataEnviado}</span>
                                 <div style="display: flex; gap: 6px;">
                                     ${podeNegociar ? `<button type="button" onclick="window.abrirModalChat('${docId}', '${propId}')" style="background: #3b82f6; border: none; border-radius: 4px; color: #fff; padding: 4px 8px; font-size: 0.80em; cursor: pointer;">💬 Chat</button>` : ''}
                                     ${(ehDonoDoChamado && !chamadoFinalizado) ? `<button type="button" onclick="window.finalizarChamado('${docId}', '${prop.mecanicoEmail}')" style="background: #10b981; border: none; border-radius: 4px; color: #fff; padding: 4px 8px; font-size: 0.80em; cursor: pointer;">✅ Aceitar Proposta</button>` : ''}
@@ -426,7 +500,7 @@ async function carregarOrcamentos() {
                 }
             }
 
-            let corStatus = "#334155";
+            let corStatus = "rgba(255, 255, 255, 0.1)";
             if (data.status === "Resolvido") corStatus = "#10b981";
             if (data.status === "Cancelado") corStatus = "#ef4444";
 
@@ -435,13 +509,13 @@ async function carregarOrcamentos() {
                     <span>📋 Chamado #${docId.substring(0, 5)} - ${data.veiculo}</span>
                     <span style="background: ${corStatus}; padding: 2px 8px; border-radius: 4px; color: #fff; font-size: 0.8em;">${data.status}</span>
                 </div>
-                <div style="font-size: 0.8em; color: var(--text-dim); margin-top: 4px;">
+                <div style="font-size: 0.8em; color: var(--text-secondary); margin-top: 4px;">
                     Cliente: ${data.clienteEmail} | Odômetro: ${data.odometro.toLocaleString('pt-BR')} km
                 </div>
                 <div style="font-size: 0.85em; margin-top: 6px;">
                     <strong>Itens Solicitados:</strong> ${data.itens.join(', ')}
                 </div>
-                <div style="font-size: 0.8em; color: var(--text-dim); font-style: italic; margin-top: 4px;">
+                <div style="font-size: 0.8em; color: var(--text-secondary); font-style: italic; margin-top: 4px;">
                     "${data.observacao}"
                 </div>
                 ${propostasHtml}
@@ -464,7 +538,7 @@ async function carregarOrcamentos() {
     }
 }
 
-// Globalização de Funções para Handlers Inline (HTML)
+// Window Globals para handlers no HTML
 window.abrirModalChat = function(orcamentoId, propostaId) {
     chatOrcamentoIdAtual = orcamentoId;
     chatPropostaIdAtual = propostaId;
@@ -477,12 +551,17 @@ window.abrirModalChat = function(orcamentoId, propostaId) {
 window.fecharModalChat = function() {
     const modalChat = document.getElementById('modalChat');
     if (modalChat) modalChat.style.display = 'none';
-    if (unsubscribeChatListener) unsubscribeChatListener();
+    if (unsubscribeChatListener) {
+        unsubscribeChatListener();
+        unsubscribeChatListener = null;
+    }
 };
 
 function ouvirMensagensChat() {
     const chatBox = document.getElementById('chatMessages');
     if (!chatBox) return;
+
+    if (unsubscribeChatListener) unsubscribeChatListener();
 
     chatBox.innerHTML = "<div class='empty-msg'>Carregando mensagens...</div>";
 
@@ -516,6 +595,9 @@ function ouvirMensagensChat() {
         });
 
         chatBox.scrollTop = chatBox.scrollHeight;
+    }, (error) => {
+        console.error("Erro no Listener do Chat:", error);
+        chatBox.innerHTML = "<div class='empty-msg'>Erro ao carregar chat.</div>";
     });
 }
 
@@ -547,8 +629,14 @@ document.getElementById('formChat')?.addEventListener('submit', async (e) => {
 });
 
 async function responderOrcamento(orcamentoId) {
-    const valor = prompt("Digite o valor estimado (R$):");
-    if (!valor) return;
+    const valorInput = prompt("Digite o valor estimado (R$):");
+    if (!valorInput) return;
+
+    const valorParsed = parseFloat(valorInput.replace(',', '.'));
+    if (isNaN(valorParsed) || valorParsed <= 0) {
+        alert("Valor inválido.");
+        return;
+    }
 
     const mensagem = prompt("Detalhes da proposta:");
 
@@ -556,7 +644,7 @@ async function responderOrcamento(orcamentoId) {
         await db.collection("orcamentos").doc(orcamentoId).collection("propostas").add({
             mecanicoId: usuarioLogado.uid,
             mecanicoEmail: usuarioLogado.email,
-            valor: parseFloat(valor),
+            valor: valorParsed,
             mensagem: mensagem || "Sem detalhes adicionais",
             dataEnviado: new Date().toLocaleDateString('pt-BR')
         });
@@ -600,13 +688,37 @@ window.finalizarChamado = async function(orcamentoId, oficinaEscolhida) {
 };
 
 // ==========================================
-// INICIALIZAÇÃO DA PÁGINA (EVENT LISTENERS)
+// 8. INICIALIZAÇÃO DA PÁGINA (EVENT LISTENERS)
 // ==========================================
 document.addEventListener('DOMContentLoaded', () => {
-    carregarMarcasAPI();
+    // ✅ FALLBACK CRÍTICO: força visibilidade imediata
+    garantirVisibilidadeConteudo();
 
+    // ✅ Segundo fallback com timeout (caso observer/CSS demore)
+    setTimeout(garantirVisibilidadeConteudo, 500);
+
+    carregarMarcasAPI("carros");
+
+    // Scroll Observer init
+    const hiddenElements = document.querySelectorAll('.animate-on-scroll');
+    hiddenElements.forEach(el => {
+        try {
+            scrollObserver.observe(el);
+        } catch (e) {
+            el.classList.add('visible');
+        }
+    });
+
+    const selectTipoVeiculo = document.getElementById('selectTipoVeiculo');
     const selectMarca = document.getElementById('selectMarca');
     const selectModelo = document.getElementById('selectModelo');
+
+    if (selectTipoVeiculo) {
+        selectTipoVeiculo.addEventListener('change', (e) => {
+            tipoVeiculoAtual = e.target.value;
+            carregarMarcasAPI(tipoVeiculoAtual);
+        });
+    }
 
     if (selectMarca) {
         selectMarca.addEventListener('change', (e) => {
@@ -624,6 +736,7 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('btnCloseAuth')?.addEventListener('click', fecharModalAuth);
     document.getElementById('linkToggleAuth')?.addEventListener('click', alternarModoAuth);
 
+    // SIDEBAR & NAVEGAÇÃO
     const btnOpenMenu = document.getElementById('btnOpenMenu');
     const btnCloseMenu = document.getElementById('btnCloseMenu');
     const sidebar = document.getElementById('sidebar');
@@ -655,6 +768,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (event.key === 'Escape') fecharMenuLateral();
     });
 
+    // Navegação suave pelos itens da Sidebar
     document.querySelectorAll('.sidebar-item[data-target]').forEach((item) => {
         item.addEventListener('click', () => {
             document.querySelectorAll('.sidebar-item[data-target]').forEach(i => i.classList.remove('active'));
